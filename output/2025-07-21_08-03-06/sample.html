@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Explorer</title>
+    <style>
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #34495e;
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .file-info {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .file-name {
+            font-weight: bold;
+        }
+        
+        .file-size {
+            margin-left: 0.5rem;
+        }
+        
+        .file-type {
+            margin-left: 0.5rem;
+            background: #3498db;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+        
+        .main-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+        
+        .tree-panel {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .tree-header {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            background: #f8f9fa;
+        }
+        
+        .tree-header h3 {
+            font-size: 1rem;
+            color: #495057;
+        }
+        
+        .tree-container {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .tree-view {
+            padding: 0.5rem;
+        }
+        
+        .tree-node {
+            margin: 0.2rem 0;
+        }
+        
+        .tree-node-content {
+            display: flex;
+            align-items: center;
+            padding: 0.3rem 0.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .tree-node-content:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .tree-node-content.selected {
+            background-color: #e3f2fd;
+            border-left: 3px solid #2196f3;
+        }
+        
+        .tree-node-icon {
+            margin-right: 0.5rem;
+            font-size: 1.1rem;
+            width: 1.2rem;
+            text-align: center;
+        }
+        
+        .tree-node-name {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+        
+        .tree-node-count {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-left: 0.5rem;
+        }
+        
+        .tree-children {
+            margin-left: 1.5rem;
+            display: none;
+        }
+        
+        .tree-children.expanded {
+            display: block;
+        }
+        
+        .content-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        
+        .content-header {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .content-header h3 {
+            font-size: 1rem;
+            color: #495057;
+        }
+        
+        .path-display {
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #6c757d;
+            background: #e9ecef;
+            padding: 0.3rem 0.6rem;
+            border-radius: 3px;
+        }
+        
+        .content-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        
+        .content-view {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        .json-object {
+            margin: 0.5rem 0;
+        }
+        
+        .json-key {
+            color: #d73a49;
+            font-weight: bold;
+        }
+        
+        .json-value {
+            margin-left: 0.5rem;
+        }
+        
+        .json-string {
+            color: #032f62;
+        }
+        
+        .json-number {
+            color: #005cc5;
+        }
+        
+        .json-boolean {
+            color: #e36209;
+        }
+        
+        .json-null {
+            color: #6a737d;
+        }
+        
+        .json-array {
+            margin: 0.5rem 0;
+        }
+        
+        .json-array-item {
+            margin: 0.2rem 0;
+            padding-left: 1rem;
+        }
+        
+        .expand-toggle {
+            cursor: pointer;
+            margin-right: 0.3rem;
+            font-size: 0.8rem;
+            color: #6c757d;
+            transition: transform 0.2s;
+        }
+        
+        .expand-toggle.expanded {
+            transform: rotate(90deg);
+        }
+        
+        /* Context Menu */
+        .context-menu {
+            position: fixed;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 4px 0;
+            z-index: 1000;
+            display: none;
+            min-width: 150px;
+        }
+        
+        .context-menu-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .context-menu-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .context-menu-separator {
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 4px 0;
+        }
+        
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1001;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+        
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>JSON Explorer</h1>
+            <div class="file-info">
+                <span class="file-name">sample.json</span>
+                <span class="file-size">(1.5 KB)</span>
+                <span class="file-type">dict</span>
+            </div>
+        </header>
+        
+        <main class="main-content">
+            <aside class="tree-panel">
+                <div class="tree-header">
+                    <h3>Structure</h3>
+                </div>
+                <div class="tree-container">
+                    <div id="tree-view" class="tree-view">
+                        <div class="tree-node" data-path="root">  <div class="tree-node-content" onclick="selectNode('root')">    <span class="expand-toggle expanded">▶</span>    <span class="tree-node-icon">📁</span>    <span class="tree-node-name">root</span>    <span class="tree-node-count">(7)</span>  </div>  <div class="tree-children expanded" onclick="event.stopPropagation()">  <div class="tree-node" data-path="name">    <div class="tree-node-content" onclick="selectNode('name')">            <span class="tree-node-icon">📄</span>      <span class="tree-node-name">root</span>          </div>  </div>  <div class="tree-node" data-path="version">    <div class="tree-node-content" onclick="selectNode('version')">            <span class="tree-node-icon">📄</span>      <span class="tree-node-name">root</span>          </div>  </div>  <div class="tree-node" data-path="description">    <div class="tree-node-content" onclick="selectNode('description')">            <span class="tree-node-icon">📄</span>      <span class="tree-node-name">root</span>          </div>  </div>  <div class="tree-node" data-path="metadata">    <div class="tree-node-content" onclick="selectNode('metadata')">      <span class="expand-toggle expanded">▶</span>      <span class="tree-node-icon">📁</span>      <span class="tree-node-name">root</span>      <span class="tree-node-count">(3)</span>    </div>    <div class="tree-children expanded" onclick="event.stopPropagation()">    <div class="tree-node" data-path="metadata.created">      <div class="tree-node-content" onclick="selectNode('metadata.created')">                <span class="tree-node-icon">📄</span>        <span class="tree-node-name">created</span>              </div>    </div>    <div class="tree-node" data-path="metadata.author">      <div class="tree-node-content" onclick="selectNode('metadata.author')">                <span class="tree-node-icon">📄</span>        <span class="tree-node-name">author</span>              </div>    </div>    <div class="tree-node" data-path="metadata.tags">      <div class="tree-node-content" onclick="selectNode('metadata.tags')">        <span class="expand-toggle ">▶</span>        <span class="tree-node-icon">📋</span>        <span class="tree-node-name">tags</span>        <span class="tree-node-count">[3]</span>      </div>      <div class="tree-children " onclick="event.stopPropagation()">      <div class="tree-node" data-path="metadata.tags[0]">        <div class="tree-node-content" onclick="selectNode('metadata.tags[0]')">                    <span class="tree-node-icon">📄</span>          <span class="tree-node-name">tags[0]</span>                  </div>      </div>      <div class="tree-node" data-path="metadata.tags[1]">        <div class="tree-node-content" onclick="selectNode('metadata.tags[1]')">                    <span class="tree-node-icon">📄</span>          <span class="tree-node-name">tags[1]</span>                  </div>      </div>      <div class="tree-node" data-path="metadata.tags[2]">        <div class="tree-node-content" onclick="selectNode('metadata.tags[2]')">                    <span class="tree-node-icon">📄</span>          <span class="tree-node-name">tags[2]</span>                  </div>      </div>      </div>    </div>    </div>  </div>  <div class="tree-node" data-path="data">    <div class="tree-node-content" onclick="selectNode('data')">      <span class="expand-toggle expanded">▶</span>      <span class="tree-node-icon">📁</span>      <span class="tree-node-name">root</span>      <span class="tree-node-count">(3)</span>    </div>    <div class="tree-children expanded" onclick="event.stopPropagation()">    <div class="tree-node" data-path="data.users">      <div class="tree-node-content" onclick="selectNode('data.users')">        <span class="expand-toggle ">▶</span>        <span class="tree-node-icon">📋</span>        <span class="tree-node-name">users</span>        <span class="tree-node-count">[2]</span>      </div>      <div class="tree-children " onclick="event.stopPropagation()">      <div class="tree-node" data-path="data.users[0]">        <div class="tree-node-content" onclick="selectNode('data.users[0]')">          <span class="expand-toggle ">▶</span>          <span class="tree-node-icon">📁</span>          <span class="tree-node-name">users[0]</span>          <span class="tree-node-count">(5)</span>        </div>        <div class="tree-children " onclick="event.stopPropagation()">        <div class="tree-node" data-path="data.users[0].id">          <div class="tree-node-content" onclick="selectNode('data.users[0].id')">                        <span class="tree-node-icon">📄</span>            <span class="tree-node-name">id</span>                      </div>        </div>        <div class="tree-node" data-path="data.users[0].name">          <div class="tree-node-content" onclick="selectNode('data.users[0].name')">                        <span class="tree-node-icon">📄</span>            <span class="tree-node-name">name</span>                      </div>        </div>        <div class="tree-node" data-path="data.users[0].email">          <div class="tree-node-content" onclick="selectNode('data.users[0].email')">                        <span class="tree-node-icon">📄</span>            <span class="tree-node-name">email</span>                      </div>        </div>        <div class="tree-node" data-path="data.users[0].active">          <div class="tree-node-content" onclick="selectNode('data.users[0].active')">                        <span class="tree-node-icon">📄</span>            <span class="tree-node-name">active</span>                      </div>        </div>        <div class="tree-node" data-path="data.users[0].profile">          <div class="tree-node-content" onclick="selectNode('data.users[0].profile')">            <span class="expand-toggle ">▶</span>            <span class="tree-node-icon">📁</span>            <span class="tree-node-name">profile</span>            <span class="tree-node-count">(3)</span>          </div>          <div class="tree-children " onclick="event.stopPropagation()">          <div class="tree-node" data-path="data.users[0].profile.age">            <div class="tree-node-content" onclick="selectNode('data.users[0].profile.age')">                            <span class="tree-node-icon">📄</span>              <span class="tree-node-name">age</span>                          </div>          </div>          <div class="tree-node" data-path="data.users[0].profile.location">            <div class="tree-node-content" onclick="selectNode('data.users[0].profile.location')">                            <span class="tree-node-icon">📄</span>              <span class="tree-node-name">location</span>                          </div>          </div>          <div class="tree-node" data-path="data.users[0].profile.interests">            <div class="tree-node-content" onclick="selectNode('data.users[0].profile.interests')">              <span class="expand-toggle ">▶</span>              <span class="tree-node-icon">📋</span>              <span class="tree-node-name">interests</span>              <span class="tree-node-count">[3]</span>            </div>            <div class="tree-children " onclick="event.stopPropagation()">            <div class="tree-node" data-path="data.users[0].profile.interests[0]">              <div class="tree-node-content" onclick="selectNode('data.users[0].profile.interests[0]')">                                <span class="tree-node-icon">📄</span>                <span class="tree-node-name">interests[0]</span>                              </div>            </div>            <div class="tree-node" data-path="data.users[0].profile.interests[1]">              <div class="tree-node-content" onclick="selectNode('data.users[0].profile.interests[1]')">                                <span class="tree-node-icon">📄</span>                <span class="tree-node-name">interests[1]</span>                              </div>            </div>            <div class="tree-node" data-path="data.users[0].profile.interests[2]">              <div class="tree-node-content" onclick="selectNode('data.users[0].profile.interests[2]')">                                <span class="tree-node-icon">📄</span>                <span class="tree-node-name">interests[2]</span>                              </div>            </div>            </div>          </div>          </div>        </div>        </div>      </div>      <div class="tree-node" data-path="data.users[1]">        <div class="tree-node-content" onclick="selectNode('data.users[1]')">          <span class="expand-toggle ">▶</span>          <span class="tree-node-icon">📁</span>          <span class="tree-node-name">users[1]</span>          <span class="tree-node-count">(5)</span>        </div>        <div class="tree-children " onclick="event.stopPropagation()">        <div class="tree-node" data-path="data.users[1].id">          <div class="tree-node-content" onclick="selectNode('data.users[1].id')">                        <span class="tree-node-icon">📄</span>            <span class="tree-node-name">id</span>                      </div>        </div>        <div class="tree-node" data-path="data.users[1].name">          <div class="tree-node-content" onclick="selectNode('data.users[1].name')">                        <span class="tree-node-icon">📄</span>            <span class="tree-node-name">name</span>                      </div>        </div>        <div class="tree-node" data-path="data.users[1].email">          <div class="tree-node-content" onclick="selectNode('data.users[1].email')">                        <span class="tree-node-icon">📄</span>            <span class="tree-node-name">email</span>                      </div>        </div>        <div class="tree-node" data-path="data.users[1].active">          <div class="tree-node-content" onclick="selectNode('data.users[1].active')">                        <span class="tree-node-icon">📄</span>            <span class="tree-node-name">active</span>                      </div>        </div>        <div class="tree-node" data-path="data.users[1].profile">          <div class="tree-node-content" onclick="selectNode('data.users[1].profile')">            <span class="expand-toggle ">▶</span>            <span class="tree-node-icon">📁</span>            <span class="tree-node-name">profile</span>            <span class="tree-node-count">(3)</span>          </div>          <div class="tree-children " onclick="event.stopPropagation()">          <div class="tree-node" data-path="data.users[1].profile.age">            <div class="tree-node-content" onclick="selectNode('data.users[1].profile.age')">                            <span class="tree-node-icon">📄</span>              <span class="tree-node-name">age</span>                          </div>          </div>          <div class="tree-node" data-path="data.users[1].profile.location">            <div class="tree-node-content" onclick="selectNode('data.users[1].profile.location')">                            <span class="tree-node-icon">📄</span>              <span class="tree-node-name">location</span>                          </div>          </div>          <div class="tree-node" data-path="data.users[1].profile.interests">            <div class="tree-node-content" onclick="selectNode('data.users[1].profile.interests')">              <span class="expand-toggle ">▶</span>              <span class="tree-node-icon">📋</span>              <span class="tree-node-name">interests</span>              <span class="tree-node-count">[3]</span>            </div>            <div class="tree-children " onclick="event.stopPropagation()">            <div class="tree-node" data-path="data.users[1].profile.interests[0]">              <div class="tree-node-content" onclick="selectNode('data.users[1].profile.interests[0]')">                                <span class="tree-node-icon">📄</span>                <span class="tree-node-name">interests[0]</span>                              </div>            </div>            <div class="tree-node" data-path="data.users[1].profile.interests[1]">              <div class="tree-node-content" onclick="selectNode('data.users[1].profile.interests[1]')">                                <span class="tree-node-icon">📄</span>                <span class="tree-node-name">interests[1]</span>                              </div>            </div>            <div class="tree-node" data-path="data.users[1].profile.interests[2]">              <div class="tree-node-content" onclick="selectNode('data.users[1].profile.interests[2]')">                                <span class="tree-node-icon">📄</span>                <span class="tree-node-name">interests[2]</span>                              </div>            </div>            </div>          </div>          </div>        </div>        </div>      </div>      </div>    </div>    <div class="tree-node" data-path="data.settings">      <div class="tree-node-content" onclick="selectNode('data.settings')">        <span class="expand-toggle ">▶</span>        <span class="tree-node-icon">📁</span>        <span class="tree-node-name">settings</span>        <span class="tree-node-count">(3)</span>      </div>      <div class="tree-children " onclick="event.stopPropagation()">      <div class="tree-node" data-path="data.settings.theme">        <div class="tree-node-content" onclick="selectNode('data.settings.theme')">                    <span class="tree-node-icon">📄</span>          <span class="tree-node-name">theme</span>                  </div>      </div>      <div class="tree-node" data-path="data.settings.language">        <div class="tree-node-content" onclick="selectNode('data.settings.language')">                    <span class="tree-node-icon">📄</span>          <span class="tree-node-name">language</span>                  </div>      </div>      <div class="tree-node" data-path="data.settings.notifications">        <div class="tree-node-content" onclick="selectNode('data.settings.notifications')">          <span class="expand-toggle ">▶</span>          <span class="tree-node-icon">📁</span>          <span class="tree-node-name">notifications</span>          <span class="tree-node-count">(3)</span>        </div>        <div class="tree-children " onclick="event.stopPropagation()">        <div class="tree-node" data-path="data.settings.notifications.email">          <div class="tree-node-content" onclick="selectNode('data.settings.notifications.email')">                        <span class="tree-node-icon">📄</span>            <span class="tree-node-name">email</span>                      </div>        </div>        <div class="tree-node" data-path="data.settings.notifications.push">          <div class="tree-node-content" onclick="selectNode('data.settings.notifications.push')">                        <span class="tree-node-icon">📄</span>            <span class="tree-node-name">push</span>                      </div>        </div>        <div class="tree-node" data-path="data.settings.notifications.sms">          <div class="tree-node-content" onclick="selectNode('data.settings.notifications.sms')">                        <span class="tree-node-icon">📄</span>            <span class="tree-node-name">sms</span>                      </div>        </div>        </div>      </div>      </div>    </div>    <div class="tree-node" data-path="data.statistics">      <div class="tree-node-content" onclick="selectNode('data.statistics')">        <span class="expand-toggle ">▶</span>        <span class="tree-node-icon">📁</span>        <span class="tree-node-name">statistics</span>        <span class="tree-node-count">(3)</span>      </div>      <div class="tree-children " onclick="event.stopPropagation()">      <div class="tree-node" data-path="data.statistics.total_users">        <div class="tree-node-content" onclick="selectNode('data.statistics.total_users')">                    <span class="tree-node-icon">📄</span>          <span class="tree-node-name">total_users</span>                  </div>      </div>      <div class="tree-node" data-path="data.statistics.active_users">        <div class="tree-node-content" onclick="selectNode('data.statistics.active_users')">                    <span class="tree-node-icon">📄</span>          <span class="tree-node-name">active_users</span>                  </div>      </div>      <div class="tree-node" data-path="data.statistics.average_age">        <div class="tree-node-content" onclick="selectNode('data.statistics.average_age')">                    <span class="tree-node-icon">📄</span>          <span class="tree-node-name">average_age</span>                  </div>      </div>      </div>    </div>    </div>  </div>  <div class="tree-node" data-path="nested_example">    <div class="tree-node-content" onclick="selectNode('nested_example')">      <span class="expand-toggle expanded">▶</span>      <span class="tree-node-icon">📁</span>      <span class="tree-node-name">root</span>      <span class="tree-node-count">(1)</span>    </div>    <div class="tree-children expanded" onclick="event.stopPropagation()">    <div class="tree-node" data-path="nested_example.level1">      <div class="tree-node-content" onclick="selectNode('nested_example.level1')">        <span class="expand-toggle ">▶</span>        <span class="tree-node-icon">📁</span>        <span class="tree-node-name">level1</span>        <span class="tree-node-count">(1)</span>      </div>      <div class="tree-children " onclick="event.stopPropagation()">      <div class="tree-node" data-path="nested_example.level1.level2">        <div class="tree-node-content" onclick="selectNode('nested_example.level1.level2')">          <span class="expand-toggle ">▶</span>          <span class="tree-node-icon">📁</span>          <span class="tree-node-name">level2</span>          <span class="tree-node-count">(1)</span>        </div>        <div class="tree-children " onclick="event.stopPropagation()">        <div class="tree-node" data-path="nested_example.level1.level2.level3">          <div class="tree-node-content" onclick="selectNode('nested_example.level1.level2.level3')">            <span class="expand-toggle ">▶</span>            <span class="tree-node-icon">📁</span>            <span class="tree-node-name">level3</span>            <span class="tree-node-count">(1)</span>          </div>          <div class="tree-children " onclick="event.stopPropagation()">          <div class="tree-node" data-path="nested_example.level1.level2.level3.level4">            <div class="tree-node-content" onclick="selectNode('nested_example.level1.level2.level3.level4')">              <span class="expand-toggle ">▶</span>              <span class="tree-node-icon">📁</span>              <span class="tree-node-name">level4</span>              <span class="tree-node-count">(1)</span>            </div>            <div class="tree-children " onclick="event.stopPropagation()">            <div class="tree-node" data-path="nested_example.level1.level2.level3.level4.level5">              <div class="tree-node-content" onclick="selectNode('nested_example.level1.level2.level3.level4.level5')">                <span class="expand-toggle ">▶</span>                <span class="tree-node-icon">📁</span>                <span class="tree-node-name">level5</span>                <span class="tree-node-count">(1)</span>              </div>              <div class="tree-children " onclick="event.stopPropagation()">              <div class="tree-node" data-path="nested_example.level1.level2.level3.level4.level5.deep_value">                <div class="tree-node-content" onclick="selectNode('nested_example.level1.level2.level3.level4.level5.deep_value')">                                    <span class="tree-node-icon">📄</span>                  <span class="tree-node-name">deep_value</span>                                  </div>              </div>              </div>            </div>            </div>          </div>          </div>        </div>        </div>      </div>      </div>    </div>    </div>  </div>  <div class="tree-node" data-path="array_example">    <div class="tree-node-content" onclick="selectNode('array_example')">      <span class="expand-toggle expanded">▶</span>      <span class="tree-node-icon">📋</span>      <span class="tree-node-name">root</span>      <span class="tree-node-count">[6]</span>    </div>    <div class="tree-children expanded" onclick="event.stopPropagation()">    <div class="tree-node" data-path="array_example[0]">      <div class="tree-node-content" onclick="selectNode('array_example[0]')">                <span class="tree-node-icon">📄</span>        <span class="tree-node-name">root</span>              </div>    </div>    <div class="tree-node" data-path="array_example[1]">      <div class="tree-node-content" onclick="selectNode('array_example[1]')">                <span class="tree-node-icon">📄</span>        <span class="tree-node-name">root</span>              </div>    </div>    <div class="tree-node" data-path="array_example[2]">      <div class="tree-node-content" onclick="selectNode('array_example[2]')">                <span class="tree-node-icon">📄</span>        <span class="tree-node-name">root</span>              </div>    </div>    <div class="tree-node" data-path="array_example[3]">      <div class="tree-node-content" onclick="selectNode('array_example[3]')">                <span class="tree-node-icon">📄</span>        <span class="tree-node-name">root</span>              </div>    </div>    <div class="tree-node" data-path="array_example[4]">      <div class="tree-node-content" onclick="selectNode('array_example[4]')">        <span class="expand-toggle ">▶</span>        <span class="tree-node-icon">📁</span>        <span class="tree-node-name">root</span>        <span class="tree-node-count">(1)</span>      </div>      <div class="tree-children " onclick="event.stopPropagation()">      <div class="tree-node" data-path="array_example[4].nested_object">        <div class="tree-node-content" onclick="selectNode('array_example[4].nested_object')">                    <span class="tree-node-icon">📄</span>          <span class="tree-node-name">nested_object</span>                  </div>      </div>      </div>    </div>    <div class="tree-node" data-path="array_example[5]">      <div class="tree-node-content" onclick="selectNode('array_example[5]')">        <span class="expand-toggle ">▶</span>        <span class="tree-node-icon">📋</span>        <span class="tree-node-name">root</span>        <span class="tree-node-count">[3]</span>      </div>      <div class="tree-children " onclick="event.stopPropagation()">      <div class="tree-node" data-path="array_example[5][0]">        <div class="tree-node-content" onclick="selectNode('array_example[5][0]')">                    <span class="tree-node-icon">📄</span>          <span class="tree-node-name">root</span>                  </div>      </div>      <div class="tree-node" data-path="array_example[5][1]">        <div class="tree-node-content" onclick="selectNode('array_example[5][1]')">                    <span class="tree-node-icon">📄</span>          <span class="tree-node-name">root</span>                  </div>      </div>      <div class="tree-node" data-path="array_example[5][2]">        <div class="tree-node-content" onclick="selectNode('array_example[5][2]')">                    <span class="tree-node-icon">📄</span>          <span class="tree-node-name">root</span>                  </div>      </div>      </div>    </div>    </div>  </div>  </div></div>
+                    </div>
+                </div>
+            </aside>
+            
+            <section class="content-panel">
+                <div class="content-header">
+                    <h3>Content</h3>
+                    <div class="path-display">
+                        <span id="current-path">root</span>
+                    </div>
+                </div>
+                <div class="content-container">
+                    <div id="content-view" class="content-view">
+                        <div class="json-object">  <div>    <span class="json-key">"id"</span>:     <span class="json-value"><span class="string">"root"</span></span>  </div>  <div>    <span class="json-key">"name"</span>:     <span class="json-value"><span class="string">"root"</span></span>  </div>  <div>    <span class="json-key">"type"</span>:     <span class="json-value"><span class="string">"object"</span></span>  </div>  <div>    <span class="json-key">"expanded"</span>:     <span class="json-value"><span class="boolean">true</span></span>  </div>  <div>    <span class="json-key">"children"</span>:     <span class="json-value">  <div class="json-array">    <div class="json-array-item">      <span class="json-key">[0]</span>:       <span class="json-value">    <div class="json-object">      <div>        <span class="json-key">"id"</span>:         <span class="json-value"><span class="string">"name"</span></span>      </div>      <div>        <span class="json-key">"name"</span>:         <span class="json-value"><span class="string">"root"</span></span>      </div>      <div>        <span class="json-key">"type"</span>:         <span class="json-value"><span class="string">"primitive"</span></span>      </div>      <div>        <span class="json-key">"value"</span>:         <span class="json-value"><span class="string">"Sample JSON Data"</span></span>      </div>      <div>        <span class="json-key">"expanded"</span>:         <span class="json-value"><span class="boolean">false</span></span>      </div>      <div>        <span class="json-key">"children"</span>:         <span class="json-value">      <div class="json-array">      </div></span>      </div>    </div></span>    </div>    <div class="json-array-item">      <span class="json-key">[1]</span>:       <span class="json-value">    <div class="json-object">      <div>        <span class="json-key">"id"</span>:         <span class="json-value"><span class="string">"version"</span></span>      </div>      <div>        <span class="json-key">"name"</span>:         <span class="json-value"><span class="string">"root"</span></span>      </div>      <div>        <span class="json-key">"type"</span>:         <span class="json-value"><span class="string">"primitive"</span></span>      </div>      <div>        <span class="json-key">"value"</span>:         <span class="json-value"><span class="string">"1.0.0"</span></span>      </div>      <div>        <span class="json-key">"expanded"</span>:         <span class="json-value"><span class="boolean">false</span></span>      </div>      <div>        <span class="json-key">"children"</span>:         <span class="json-value">      <div class="json-array">      </div></span>      </div>    </div></span>    </div>    <div class="json-array-item">      <span class="json-key">[2]</span>:       <span class="json-value">    <div class="json-object">      <div>        <span class="json-key">"id"</span>:         <span class="json-value"><span class="string">"description"</span></span>      </div>      <div>        <span class="json-key">"name"</span>:         <span class="json-value"><span class="string">"root"</span></span>      </div>      <div>        <span class="json-key">"type"</span>:         <span class="json-value"><span class="string">"primitive"</span></span>      </div>      <div>        <span class="json-key">"value"</span>:         <span class="json-value"><span class="string">"A sample JSON file for testing the JSON to HTML Explorer tool"</span></span>      </div>      <div>        <span class="json-key">"expanded"</span>:         <span class="json-value"><span class="boolean">false</span></span>      </div>      <div>        <span class="json-key">"children"</span>:         <span class="json-value">      <div class="json-array">      </div></span>      </div>    </div></span>    </div>    <div class="json-array-item">      <span class="json-key">[3]</span>:       <span class="json-value">    <div class="json-object">      <div>        <span class="json-key">"id"</span>:         <span class="json-value"><span class="string">"metadata"</span></span>      </div>      <div>        <span class="json-key">"name"</span>:         <span class="json-value"><span class="string">"root"</span></span>      </div>      <div>        <span class="json-key">"type"</span>:         <span class="json-value"><span class="string">"object"</span></span>      </div>      <div>        <span class="json-key">"expanded"</span>:         <span class="json-value"><span class="boolean">true</span></span>      </div>      <div>        <span class="json-key">"children"</span>:         <span class="json-value">      <div class="json-array">        <div class="json-array-item">          <span class="json-key">[0]</span>:           <span class="json-value">        <div class="json-object">          <div>            <span class="json-key">"id"</span>:             <span class="json-value"><span class="string">"metadata.created"</span></span>          </div>          <div>            <span class="json-key">"name"</span>:             <span class="json-value"><span class="string">"created"</span></span>          </div>          <div>            <span class="json-key">"type"</span>:             <span class="json-value"><span class="string">"primitive"</span></span>          </div>          <div>            <span class="json-key">"value"</span>:             <span class="json-value"><span class="string">"2024-01-15"</span></span>          </div>          <div>            <span class="json-key">"expanded"</span>:             <span class="json-value"><span class="boolean">false</span></span>          </div>          <div>            <span class="json-key">"children"</span>:             <span class="json-value">          <div class="json-array">          </div></span>          </div>        </div></span>        </div>        <div class="json-array-item">          <span class="json-key">[1]</span>:           <span class="json-value">        <div class="json-object">          <div>            <span class="json-key">"id"</span>:             <span class="json-value"><span class="string">"metadata.author"</span></span>          </div>          <div>            <span class="json-key">"name"</span>:             <span class="json-value"><span class="string">"author"</span></span>          </div>          <div>            <span class="json-key">"type"</span>:             <span class="json-value"><span class="string">"primitive"</span></span>          </div>          <div>            <span class="json-key">"value"</span>:             <span class="json-value"><span class="string">"JSON Explorer Tool"</span></span>          </div>          <div>            <span class="json-key">"expanded"</span>:             <span class="json-value"><span class="boolean">false</span></span>          </div>          <div>            <span class="json-key">"children"</span>:             <span class="json-value">          <div class="json-array">          </div></span>          </div>        </div></span>        </div>        <div class="json-array-item">          <span class="json-key">[2]</span>:           <span class="json-value">        <div class="json-object">          <div>            <span class="json-key">"id"</span>:             <span class="json-value"><span class="string">"metadata.tags"</span></span>          </div>          <div>            <span class="json-key">"name"</span>:             <span class="json-value"><span class="string">"tags"</span></span>          </div>          <div>            <span class="json-key">"type"</span>:             <span class="json-value"><span class="string">"array"</span></span>          </div>          <div>            <span class="json-key">"expanded"</span>:             <span class="json-value"><span class="boolean">false</span></span>          </div>          <div>            <span class="json-key">"children"</span>:             <span class="json-value">          <div class="json-array">            <div class="json-array-item">              <span class="json-key">[0]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"metadata.tags[0]"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"tags[0]"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"primitive"</span></span>              </div>              <div>                <span class="json-key">"value"</span>:                 <span class="json-value"><span class="string">"sample"</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">              </div></span>              </div>            </div></span>            </div>            <div class="json-array-item">              <span class="json-key">[1]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"metadata.tags[1]"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"tags[1]"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"primitive"</span></span>              </div>              <div>                <span class="json-key">"value"</span>:                 <span class="json-value"><span class="string">"test"</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">              </div></span>              </div>            </div></span>            </div>            <div class="json-array-item">              <span class="json-key">[2]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"metadata.tags[2]"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"tags[2]"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"primitive"</span></span>              </div>              <div>                <span class="json-key">"value"</span>:                 <span class="json-value"><span class="string">"demo"</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">              </div></span>              </div>            </div></span>            </div>          </div></span>          </div>        </div></span>        </div>      </div></span>      </div>    </div></span>    </div>    <div class="json-array-item">      <span class="json-key">[4]</span>:       <span class="json-value">    <div class="json-object">      <div>        <span class="json-key">"id"</span>:         <span class="json-value"><span class="string">"data"</span></span>      </div>      <div>        <span class="json-key">"name"</span>:         <span class="json-value"><span class="string">"root"</span></span>      </div>      <div>        <span class="json-key">"type"</span>:         <span class="json-value"><span class="string">"object"</span></span>      </div>      <div>        <span class="json-key">"expanded"</span>:         <span class="json-value"><span class="boolean">true</span></span>      </div>      <div>        <span class="json-key">"children"</span>:         <span class="json-value">      <div class="json-array">        <div class="json-array-item">          <span class="json-key">[0]</span>:           <span class="json-value">        <div class="json-object">          <div>            <span class="json-key">"id"</span>:             <span class="json-value"><span class="string">"data.users"</span></span>          </div>          <div>            <span class="json-key">"name"</span>:             <span class="json-value"><span class="string">"users"</span></span>          </div>          <div>            <span class="json-key">"type"</span>:             <span class="json-value"><span class="string">"array"</span></span>          </div>          <div>            <span class="json-key">"expanded"</span>:             <span class="json-value"><span class="boolean">false</span></span>          </div>          <div>            <span class="json-key">"children"</span>:             <span class="json-value">          <div class="json-array">            <div class="json-array-item">              <span class="json-key">[0]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"data.users[0]"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"users[0]"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"object"</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">                <div class="json-array-item">                  <span class="json-key">[0]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"data.users[0].id"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"id"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"primitive"</span></span>                  </div>                  <div>                    <span class="json-key">"value"</span>:                     <span class="json-value"><span class="number">1</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                  </div></span>                  </div>                </div></span>                </div>                <div class="json-array-item">                  <span class="json-key">[1]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"data.users[0].name"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"name"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"primitive"</span></span>                  </div>                  <div>                    <span class="json-key">"value"</span>:                     <span class="json-value"><span class="string">"John Doe"</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                  </div></span>                  </div>                </div></span>                </div>                <div class="json-array-item">                  <span class="json-key">[2]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"data.users[0].email"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"email"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"primitive"</span></span>                  </div>                  <div>                    <span class="json-key">"value"</span>:                     <span class="json-value"><span class="string">"john.doe@example.com"</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                  </div></span>                  </div>                </div></span>                </div>                <div class="json-array-item">                  <span class="json-key">[3]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"data.users[0].active"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"active"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"primitive"</span></span>                  </div>                  <div>                    <span class="json-key">"value"</span>:                     <span class="json-value"><span class="boolean">true</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                  </div></span>                  </div>                </div></span>                </div>                <div class="json-array-item">                  <span class="json-key">[4]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"data.users[0].profile"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"profile"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"object"</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                    <div class="json-array-item">                      <span class="json-key">[0]</span>:                       <span class="json-value">                    <div class="json-object">                      <div>                        <span class="json-key">"id"</span>:                         <span class="json-value"><span class="string">"data.users[0].profile.age"</span></span>                      </div>                      <div>                        <span class="json-key">"name"</span>:                         <span class="json-value"><span class="string">"age"</span></span>                      </div>                      <div>                        <span class="json-key">"type"</span>:                         <span class="json-value"><span class="string">"primitive"</span></span>                      </div>                      <div>                        <span class="json-key">"value"</span>:                         <span class="json-value"><span class="number">30</span></span>                      </div>                      <div>                        <span class="json-key">"expanded"</span>:                         <span class="json-value"><span class="boolean">false</span></span>                      </div>                      <div>                        <span class="json-key">"children"</span>:                         <span class="json-value">                      <div class="json-array">                      </div></span>                      </div>                    </div></span>                    </div>                    <div class="json-array-item">                      <span class="json-key">[1]</span>:                       <span class="json-value">                    <div class="json-object">                      <div>                        <span class="json-key">"id"</span>:                         <span class="json-value"><span class="string">"data.users[0].profile.location"</span></span>                      </div>                      <div>                        <span class="json-key">"name"</span>:                         <span class="json-value"><span class="string">"location"</span></span>                      </div>                      <div>                        <span class="json-key">"type"</span>:                         <span class="json-value"><span class="string">"primitive"</span></span>                      </div>                      <div>                        <span class="json-key">"value"</span>:                         <span class="json-value"><span class="string">"New York"</span></span>                      </div>                      <div>                        <span class="json-key">"expanded"</span>:                         <span class="json-value"><span class="boolean">false</span></span>                      </div>                      <div>                        <span class="json-key">"children"</span>:                         <span class="json-value">                      <div class="json-array">                      </div></span>                      </div>                    </div></span>                    </div>                    <div class="json-array-item">                      <span class="json-key">[2]</span>:                       <span class="json-value">                    <div class="json-object">                      <div>                        <span class="json-key">"id"</span>:                         <span class="json-value"><span class="string">"data.users[0].profile.interests"</span></span>                      </div>                      <div>                        <span class="json-key">"name"</span>:                         <span class="json-value"><span class="string">"interests"</span></span>                      </div>                      <div>                        <span class="json-key">"type"</span>:                         <span class="json-value"><span class="string">"array"</span></span>                      </div>                      <div>                        <span class="json-key">"expanded"</span>:                         <span class="json-value"><span class="boolean">false</span></span>                      </div>                      <div>                        <span class="json-key">"children"</span>:                         <span class="json-value">                      <div class="json-array">                        <div class="json-array-item">                          <span class="json-key">[0]</span>:                           <span class="json-value">                        <div class="json-object">                          <div>                            <span class="json-key">"id"</span>:                             <span class="json-value"><span class="string">"data.users[0].profile.interests[0]"</span></span>                          </div>                          <div>                            <span class="json-key">"name"</span>:                             <span class="json-value"><span class="string">"interests[0]"</span></span>                          </div>                          <div>                            <span class="json-key">"type"</span>:                             <span class="json-value"><span class="string">"primitive"</span></span>                          </div>                          <div>                            <span class="json-key">"value"</span>:                             <span class="json-value"><span class="string">"programming"</span></span>                          </div>                          <div>                            <span class="json-key">"expanded"</span>:                             <span class="json-value"><span class="boolean">false</span></span>                          </div>                          <div>                            <span class="json-key">"children"</span>:                             <span class="json-value">                          <div class="json-array">                          </div></span>                          </div>                        </div></span>                        </div>                        <div class="json-array-item">                          <span class="json-key">[1]</span>:                           <span class="json-value">                        <div class="json-object">                          <div>                            <span class="json-key">"id"</span>:                             <span class="json-value"><span class="string">"data.users[0].profile.interests[1]"</span></span>                          </div>                          <div>                            <span class="json-key">"name"</span>:                             <span class="json-value"><span class="string">"interests[1]"</span></span>                          </div>                          <div>                            <span class="json-key">"type"</span>:                             <span class="json-value"><span class="string">"primitive"</span></span>                          </div>                          <div>                            <span class="json-key">"value"</span>:                             <span class="json-value"><span class="string">"reading"</span></span>                          </div>                          <div>                            <span class="json-key">"expanded"</span>:                             <span class="json-value"><span class="boolean">false</span></span>                          </div>                          <div>                            <span class="json-key">"children"</span>:                             <span class="json-value">                          <div class="json-array">                          </div></span>                          </div>                        </div></span>                        </div>                        <div class="json-array-item">                          <span class="json-key">[2]</span>:                           <span class="json-value">                        <div class="json-object">                          <div>                            <span class="json-key">"id"</span>:                             <span class="json-value"><span class="string">"data.users[0].profile.interests[2]"</span></span>                          </div>                          <div>                            <span class="json-key">"name"</span>:                             <span class="json-value"><span class="string">"interests[2]"</span></span>                          </div>                          <div>                            <span class="json-key">"type"</span>:                             <span class="json-value"><span class="string">"primitive"</span></span>                          </div>                          <div>                            <span class="json-key">"value"</span>:                             <span class="json-value"><span class="string">"hiking"</span></span>                          </div>                          <div>                            <span class="json-key">"expanded"</span>:                             <span class="json-value"><span class="boolean">false</span></span>                          </div>                          <div>                            <span class="json-key">"children"</span>:                             <span class="json-value">                          <div class="json-array">                          </div></span>                          </div>                        </div></span>                        </div>                      </div></span>                      </div>                    </div></span>                    </div>                  </div></span>                  </div>                </div></span>                </div>              </div></span>              </div>            </div></span>            </div>            <div class="json-array-item">              <span class="json-key">[1]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"data.users[1]"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"users[1]"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"object"</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">                <div class="json-array-item">                  <span class="json-key">[0]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"data.users[1].id"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"id"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"primitive"</span></span>                  </div>                  <div>                    <span class="json-key">"value"</span>:                     <span class="json-value"><span class="number">2</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                  </div></span>                  </div>                </div></span>                </div>                <div class="json-array-item">                  <span class="json-key">[1]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"data.users[1].name"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"name"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"primitive"</span></span>                  </div>                  <div>                    <span class="json-key">"value"</span>:                     <span class="json-value"><span class="string">"Jane Smith"</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                  </div></span>                  </div>                </div></span>                </div>                <div class="json-array-item">                  <span class="json-key">[2]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"data.users[1].email"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"email"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"primitive"</span></span>                  </div>                  <div>                    <span class="json-key">"value"</span>:                     <span class="json-value"><span class="string">"jane.smith@example.com"</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                  </div></span>                  </div>                </div></span>                </div>                <div class="json-array-item">                  <span class="json-key">[3]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"data.users[1].active"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"active"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"primitive"</span></span>                  </div>                  <div>                    <span class="json-key">"value"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                  </div></span>                  </div>                </div></span>                </div>                <div class="json-array-item">                  <span class="json-key">[4]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"data.users[1].profile"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"profile"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"object"</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                    <div class="json-array-item">                      <span class="json-key">[0]</span>:                       <span class="json-value">                    <div class="json-object">                      <div>                        <span class="json-key">"id"</span>:                         <span class="json-value"><span class="string">"data.users[1].profile.age"</span></span>                      </div>                      <div>                        <span class="json-key">"name"</span>:                         <span class="json-value"><span class="string">"age"</span></span>                      </div>                      <div>                        <span class="json-key">"type"</span>:                         <span class="json-value"><span class="string">"primitive"</span></span>                      </div>                      <div>                        <span class="json-key">"value"</span>:                         <span class="json-value"><span class="number">25</span></span>                      </div>                      <div>                        <span class="json-key">"expanded"</span>:                         <span class="json-value"><span class="boolean">false</span></span>                      </div>                      <div>                        <span class="json-key">"children"</span>:                         <span class="json-value">                      <div class="json-array">                      </div></span>                      </div>                    </div></span>                    </div>                    <div class="json-array-item">                      <span class="json-key">[1]</span>:                       <span class="json-value">                    <div class="json-object">                      <div>                        <span class="json-key">"id"</span>:                         <span class="json-value"><span class="string">"data.users[1].profile.location"</span></span>                      </div>                      <div>                        <span class="json-key">"name"</span>:                         <span class="json-value"><span class="string">"location"</span></span>                      </div>                      <div>                        <span class="json-key">"type"</span>:                         <span class="json-value"><span class="string">"primitive"</span></span>                      </div>                      <div>                        <span class="json-key">"value"</span>:                         <span class="json-value"><span class="string">"San Francisco"</span></span>                      </div>                      <div>                        <span class="json-key">"expanded"</span>:                         <span class="json-value"><span class="boolean">false</span></span>                      </div>                      <div>                        <span class="json-key">"children"</span>:                         <span class="json-value">                      <div class="json-array">                      </div></span>                      </div>                    </div></span>                    </div>                    <div class="json-array-item">                      <span class="json-key">[2]</span>:                       <span class="json-value">                    <div class="json-object">                      <div>                        <span class="json-key">"id"</span>:                         <span class="json-value"><span class="string">"data.users[1].profile.interests"</span></span>                      </div>                      <div>                        <span class="json-key">"name"</span>:                         <span class="json-value"><span class="string">"interests"</span></span>                      </div>                      <div>                        <span class="json-key">"type"</span>:                         <span class="json-value"><span class="string">"array"</span></span>                      </div>                      <div>                        <span class="json-key">"expanded"</span>:                         <span class="json-value"><span class="boolean">false</span></span>                      </div>                      <div>                        <span class="json-key">"children"</span>:                         <span class="json-value">                      <div class="json-array">                        <div class="json-array-item">                          <span class="json-key">[0]</span>:                           <span class="json-value">                        <div class="json-object">                          <div>                            <span class="json-key">"id"</span>:                             <span class="json-value"><span class="string">"data.users[1].profile.interests[0]"</span></span>                          </div>                          <div>                            <span class="json-key">"name"</span>:                             <span class="json-value"><span class="string">"interests[0]"</span></span>                          </div>                          <div>                            <span class="json-key">"type"</span>:                             <span class="json-value"><span class="string">"primitive"</span></span>                          </div>                          <div>                            <span class="json-key">"value"</span>:                             <span class="json-value"><span class="string">"design"</span></span>                          </div>                          <div>                            <span class="json-key">"expanded"</span>:                             <span class="json-value"><span class="boolean">false</span></span>                          </div>                          <div>                            <span class="json-key">"children"</span>:                             <span class="json-value">                          <div class="json-array">                          </div></span>                          </div>                        </div></span>                        </div>                        <div class="json-array-item">                          <span class="json-key">[1]</span>:                           <span class="json-value">                        <div class="json-object">                          <div>                            <span class="json-key">"id"</span>:                             <span class="json-value"><span class="string">"data.users[1].profile.interests[1]"</span></span>                          </div>                          <div>                            <span class="json-key">"name"</span>:                             <span class="json-value"><span class="string">"interests[1]"</span></span>                          </div>                          <div>                            <span class="json-key">"type"</span>:                             <span class="json-value"><span class="string">"primitive"</span></span>                          </div>                          <div>                            <span class="json-key">"value"</span>:                             <span class="json-value"><span class="string">"travel"</span></span>                          </div>                          <div>                            <span class="json-key">"expanded"</span>:                             <span class="json-value"><span class="boolean">false</span></span>                          </div>                          <div>                            <span class="json-key">"children"</span>:                             <span class="json-value">                          <div class="json-array">                          </div></span>                          </div>                        </div></span>                        </div>                        <div class="json-array-item">                          <span class="json-key">[2]</span>:                           <span class="json-value">                        <div class="json-object">                          <div>                            <span class="json-key">"id"</span>:                             <span class="json-value"><span class="string">"data.users[1].profile.interests[2]"</span></span>                          </div>                          <div>                            <span class="json-key">"name"</span>:                             <span class="json-value"><span class="string">"interests[2]"</span></span>                          </div>                          <div>                            <span class="json-key">"type"</span>:                             <span class="json-value"><span class="string">"primitive"</span></span>                          </div>                          <div>                            <span class="json-key">"value"</span>:                             <span class="json-value"><span class="string">"cooking"</span></span>                          </div>                          <div>                            <span class="json-key">"expanded"</span>:                             <span class="json-value"><span class="boolean">false</span></span>                          </div>                          <div>                            <span class="json-key">"children"</span>:                             <span class="json-value">                          <div class="json-array">                          </div></span>                          </div>                        </div></span>                        </div>                      </div></span>                      </div>                    </div></span>                    </div>                  </div></span>                  </div>                </div></span>                </div>              </div></span>              </div>            </div></span>            </div>          </div></span>          </div>        </div></span>        </div>        <div class="json-array-item">          <span class="json-key">[1]</span>:           <span class="json-value">        <div class="json-object">          <div>            <span class="json-key">"id"</span>:             <span class="json-value"><span class="string">"data.settings"</span></span>          </div>          <div>            <span class="json-key">"name"</span>:             <span class="json-value"><span class="string">"settings"</span></span>          </div>          <div>            <span class="json-key">"type"</span>:             <span class="json-value"><span class="string">"object"</span></span>          </div>          <div>            <span class="json-key">"expanded"</span>:             <span class="json-value"><span class="boolean">false</span></span>          </div>          <div>            <span class="json-key">"children"</span>:             <span class="json-value">          <div class="json-array">            <div class="json-array-item">              <span class="json-key">[0]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"data.settings.theme"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"theme"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"primitive"</span></span>              </div>              <div>                <span class="json-key">"value"</span>:                 <span class="json-value"><span class="string">"light"</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">              </div></span>              </div>            </div></span>            </div>            <div class="json-array-item">              <span class="json-key">[1]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"data.settings.language"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"language"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"primitive"</span></span>              </div>              <div>                <span class="json-key">"value"</span>:                 <span class="json-value"><span class="string">"en"</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">              </div></span>              </div>            </div></span>            </div>            <div class="json-array-item">              <span class="json-key">[2]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"data.settings.notifications"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"notifications"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"object"</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">                <div class="json-array-item">                  <span class="json-key">[0]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"data.settings.notifications.email"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"email"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"primitive"</span></span>                  </div>                  <div>                    <span class="json-key">"value"</span>:                     <span class="json-value"><span class="boolean">true</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                  </div></span>                  </div>                </div></span>                </div>                <div class="json-array-item">                  <span class="json-key">[1]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"data.settings.notifications.push"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"push"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"primitive"</span></span>                  </div>                  <div>                    <span class="json-key">"value"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                  </div></span>                  </div>                </div></span>                </div>                <div class="json-array-item">                  <span class="json-key">[2]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"data.settings.notifications.sms"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"sms"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"primitive"</span></span>                  </div>                  <div>                    <span class="json-key">"value"</span>:                     <span class="json-value"><span class="boolean">true</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                  </div></span>                  </div>                </div></span>                </div>              </div></span>              </div>            </div></span>            </div>          </div></span>          </div>        </div></span>        </div>        <div class="json-array-item">          <span class="json-key">[2]</span>:           <span class="json-value">        <div class="json-object">          <div>            <span class="json-key">"id"</span>:             <span class="json-value"><span class="string">"data.statistics"</span></span>          </div>          <div>            <span class="json-key">"name"</span>:             <span class="json-value"><span class="string">"statistics"</span></span>          </div>          <div>            <span class="json-key">"type"</span>:             <span class="json-value"><span class="string">"object"</span></span>          </div>          <div>            <span class="json-key">"expanded"</span>:             <span class="json-value"><span class="boolean">false</span></span>          </div>          <div>            <span class="json-key">"children"</span>:             <span class="json-value">          <div class="json-array">            <div class="json-array-item">              <span class="json-key">[0]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"data.statistics.total_users"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"total_users"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"primitive"</span></span>              </div>              <div>                <span class="json-key">"value"</span>:                 <span class="json-value"><span class="number">2</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">              </div></span>              </div>            </div></span>            </div>            <div class="json-array-item">              <span class="json-key">[1]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"data.statistics.active_users"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"active_users"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"primitive"</span></span>              </div>              <div>                <span class="json-key">"value"</span>:                 <span class="json-value"><span class="number">1</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">              </div></span>              </div>            </div></span>            </div>            <div class="json-array-item">              <span class="json-key">[2]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"data.statistics.average_age"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"average_age"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"primitive"</span></span>              </div>              <div>                <span class="json-key">"value"</span>:                 <span class="json-value"><span class="number">27.5</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">              </div></span>              </div>            </div></span>            </div>          </div></span>          </div>        </div></span>        </div>      </div></span>      </div>    </div></span>    </div>    <div class="json-array-item">      <span class="json-key">[5]</span>:       <span class="json-value">    <div class="json-object">      <div>        <span class="json-key">"id"</span>:         <span class="json-value"><span class="string">"nested_example"</span></span>      </div>      <div>        <span class="json-key">"name"</span>:         <span class="json-value"><span class="string">"root"</span></span>      </div>      <div>        <span class="json-key">"type"</span>:         <span class="json-value"><span class="string">"object"</span></span>      </div>      <div>        <span class="json-key">"expanded"</span>:         <span class="json-value"><span class="boolean">true</span></span>      </div>      <div>        <span class="json-key">"children"</span>:         <span class="json-value">      <div class="json-array">        <div class="json-array-item">          <span class="json-key">[0]</span>:           <span class="json-value">        <div class="json-object">          <div>            <span class="json-key">"id"</span>:             <span class="json-value"><span class="string">"nested_example.level1"</span></span>          </div>          <div>            <span class="json-key">"name"</span>:             <span class="json-value"><span class="string">"level1"</span></span>          </div>          <div>            <span class="json-key">"type"</span>:             <span class="json-value"><span class="string">"object"</span></span>          </div>          <div>            <span class="json-key">"expanded"</span>:             <span class="json-value"><span class="boolean">false</span></span>          </div>          <div>            <span class="json-key">"children"</span>:             <span class="json-value">          <div class="json-array">            <div class="json-array-item">              <span class="json-key">[0]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"nested_example.level1.level2"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"level2"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"object"</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">                <div class="json-array-item">                  <span class="json-key">[0]</span>:                   <span class="json-value">                <div class="json-object">                  <div>                    <span class="json-key">"id"</span>:                     <span class="json-value"><span class="string">"nested_example.level1.level2.level3"</span></span>                  </div>                  <div>                    <span class="json-key">"name"</span>:                     <span class="json-value"><span class="string">"level3"</span></span>                  </div>                  <div>                    <span class="json-key">"type"</span>:                     <span class="json-value"><span class="string">"object"</span></span>                  </div>                  <div>                    <span class="json-key">"expanded"</span>:                     <span class="json-value"><span class="boolean">false</span></span>                  </div>                  <div>                    <span class="json-key">"children"</span>:                     <span class="json-value">                  <div class="json-array">                    <div class="json-array-item">                      <span class="json-key">[0]</span>:                       <span class="json-value">                    <div class="json-object">                      <div>                        <span class="json-key">"id"</span>:                         <span class="json-value"><span class="string">"nested_example.level1.level2.level3.level4"</span></span>                      </div>                      <div>                        <span class="json-key">"name"</span>:                         <span class="json-value"><span class="string">"level4"</span></span>                      </div>                      <div>                        <span class="json-key">"type"</span>:                         <span class="json-value"><span class="string">"object"</span></span>                      </div>                      <div>                        <span class="json-key">"expanded"</span>:                         <span class="json-value"><span class="boolean">false</span></span>                      </div>                      <div>                        <span class="json-key">"children"</span>:                         <span class="json-value">                      <div class="json-array">                        <div class="json-array-item">                          <span class="json-key">[0]</span>:                           <span class="json-value">                        <div class="json-object">                          <div>                            <span class="json-key">"id"</span>:                             <span class="json-value"><span class="string">"nested_example.level1.level2.level3.level4.level5"</span></span>                          </div>                          <div>                            <span class="json-key">"name"</span>:                             <span class="json-value"><span class="string">"level5"</span></span>                          </div>                          <div>                            <span class="json-key">"type"</span>:                             <span class="json-value"><span class="string">"object"</span></span>                          </div>                          <div>                            <span class="json-key">"expanded"</span>:                             <span class="json-value"><span class="boolean">false</span></span>                          </div>                          <div>                            <span class="json-key">"children"</span>:                             <span class="json-value">                          <div class="json-array">                            <div class="json-array-item">                              <span class="json-key">[0]</span>:                               <span class="json-value">                            <div class="json-object">                              <div>                                <span class="json-key">"id"</span>:                                 <span class="json-value"><span class="string">"nested_example.level1.level2.level3.level4.level5.deep_value"</span></span>                              </div>                              <div>                                <span class="json-key">"name"</span>:                                 <span class="json-value"><span class="string">"deep_value"</span></span>                              </div>                              <div>                                <span class="json-key">"type"</span>:                                 <span class="json-value"><span class="string">"primitive"</span></span>                              </div>                              <div>                                <span class="json-key">"value"</span>:                                 <span class="json-value"><span class="string">"This is very deep!"</span></span>                              </div>                              <div>                                <span class="json-key">"expanded"</span>:                                 <span class="json-value"><span class="boolean">false</span></span>                              </div>                              <div>                                <span class="json-key">"children"</span>:                                 <span class="json-value">                              <div class="json-array">                              </div></span>                              </div>                            </div></span>                            </div>                          </div></span>                          </div>                        </div></span>                        </div>                      </div></span>                      </div>                    </div></span>                    </div>                  </div></span>                  </div>                </div></span>                </div>              </div></span>              </div>            </div></span>            </div>          </div></span>          </div>        </div></span>        </div>      </div></span>      </div>    </div></span>    </div>    <div class="json-array-item">      <span class="json-key">[6]</span>:       <span class="json-value">    <div class="json-object">      <div>        <span class="json-key">"id"</span>:         <span class="json-value"><span class="string">"array_example"</span></span>      </div>      <div>        <span class="json-key">"name"</span>:         <span class="json-value"><span class="string">"root"</span></span>      </div>      <div>        <span class="json-key">"type"</span>:         <span class="json-value"><span class="string">"array"</span></span>      </div>      <div>        <span class="json-key">"expanded"</span>:         <span class="json-value"><span class="boolean">true</span></span>      </div>      <div>        <span class="json-key">"children"</span>:         <span class="json-value">      <div class="json-array">        <div class="json-array-item">          <span class="json-key">[0]</span>:           <span class="json-value">        <div class="json-object">          <div>            <span class="json-key">"id"</span>:             <span class="json-value"><span class="string">"array_example[0]"</span></span>          </div>          <div>            <span class="json-key">"name"</span>:             <span class="json-value"><span class="string">"root"</span></span>          </div>          <div>            <span class="json-key">"type"</span>:             <span class="json-value"><span class="string">"primitive"</span></span>          </div>          <div>            <span class="json-key">"value"</span>:             <span class="json-value"><span class="string">"simple string"</span></span>          </div>          <div>            <span class="json-key">"expanded"</span>:             <span class="json-value"><span class="boolean">false</span></span>          </div>          <div>            <span class="json-key">"children"</span>:             <span class="json-value">          <div class="json-array">          </div></span>          </div>        </div></span>        </div>        <div class="json-array-item">          <span class="json-key">[1]</span>:           <span class="json-value">        <div class="json-object">          <div>            <span class="json-key">"id"</span>:             <span class="json-value"><span class="string">"array_example[1]"</span></span>          </div>          <div>            <span class="json-key">"name"</span>:             <span class="json-value"><span class="string">"root"</span></span>          </div>          <div>            <span class="json-key">"type"</span>:             <span class="json-value"><span class="string">"primitive"</span></span>          </div>          <div>            <span class="json-key">"value"</span>:             <span class="json-value"><span class="number">42</span></span>          </div>          <div>            <span class="json-key">"expanded"</span>:             <span class="json-value"><span class="boolean">false</span></span>          </div>          <div>            <span class="json-key">"children"</span>:             <span class="json-value">          <div class="json-array">          </div></span>          </div>        </div></span>        </div>        <div class="json-array-item">          <span class="json-key">[2]</span>:           <span class="json-value">        <div class="json-object">          <div>            <span class="json-key">"id"</span>:             <span class="json-value"><span class="string">"array_example[2]"</span></span>          </div>          <div>            <span class="json-key">"name"</span>:             <span class="json-value"><span class="string">"root"</span></span>          </div>          <div>            <span class="json-key">"type"</span>:             <span class="json-value"><span class="string">"primitive"</span></span>          </div>          <div>            <span class="json-key">"value"</span>:             <span class="json-value"><span class="boolean">true</span></span>          </div>          <div>            <span class="json-key">"expanded"</span>:             <span class="json-value"><span class="boolean">false</span></span>          </div>          <div>            <span class="json-key">"children"</span>:             <span class="json-value">          <div class="json-array">          </div></span>          </div>        </div></span>        </div>        <div class="json-array-item">          <span class="json-key">[3]</span>:           <span class="json-value">        <div class="json-object">          <div>            <span class="json-key">"id"</span>:             <span class="json-value"><span class="string">"array_example[3]"</span></span>          </div>          <div>            <span class="json-key">"name"</span>:             <span class="json-value"><span class="string">"root"</span></span>          </div>          <div>            <span class="json-key">"type"</span>:             <span class="json-value"><span class="string">"primitive"</span></span>          </div>          <div>            <span class="json-key">"value"</span>:             <span class="json-value"><span class="null">null</span></span>          </div>          <div>            <span class="json-key">"expanded"</span>:             <span class="json-value"><span class="boolean">false</span></span>          </div>          <div>            <span class="json-key">"children"</span>:             <span class="json-value">          <div class="json-array">          </div></span>          </div>        </div></span>        </div>        <div class="json-array-item">          <span class="json-key">[4]</span>:           <span class="json-value">        <div class="json-object">          <div>            <span class="json-key">"id"</span>:             <span class="json-value"><span class="string">"array_example[4]"</span></span>          </div>          <div>            <span class="json-key">"name"</span>:             <span class="json-value"><span class="string">"root"</span></span>          </div>          <div>            <span class="json-key">"type"</span>:             <span class="json-value"><span class="string">"object"</span></span>          </div>          <div>            <span class="json-key">"expanded"</span>:             <span class="json-value"><span class="boolean">false</span></span>          </div>          <div>            <span class="json-key">"children"</span>:             <span class="json-value">          <div class="json-array">            <div class="json-array-item">              <span class="json-key">[0]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"array_example[4].nested_object"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"nested_object"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"primitive"</span></span>              </div>              <div>                <span class="json-key">"value"</span>:                 <span class="json-value"><span class="string">"in array"</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">              </div></span>              </div>            </div></span>            </div>          </div></span>          </div>        </div></span>        </div>        <div class="json-array-item">          <span class="json-key">[5]</span>:           <span class="json-value">        <div class="json-object">          <div>            <span class="json-key">"id"</span>:             <span class="json-value"><span class="string">"array_example[5]"</span></span>          </div>          <div>            <span class="json-key">"name"</span>:             <span class="json-value"><span class="string">"root"</span></span>          </div>          <div>            <span class="json-key">"type"</span>:             <span class="json-value"><span class="string">"array"</span></span>          </div>          <div>            <span class="json-key">"expanded"</span>:             <span class="json-value"><span class="boolean">false</span></span>          </div>          <div>            <span class="json-key">"children"</span>:             <span class="json-value">          <div class="json-array">            <div class="json-array-item">              <span class="json-key">[0]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"array_example[5][0]"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"root"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"primitive"</span></span>              </div>              <div>                <span class="json-key">"value"</span>:                 <span class="json-value"><span class="string">"nested"</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">              </div></span>              </div>            </div></span>            </div>            <div class="json-array-item">              <span class="json-key">[1]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"array_example[5][1]"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"root"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"primitive"</span></span>              </div>              <div>                <span class="json-key">"value"</span>:                 <span class="json-value"><span class="string">"array"</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">              </div></span>              </div>            </div></span>            </div>            <div class="json-array-item">              <span class="json-key">[2]</span>:               <span class="json-value">            <div class="json-object">              <div>                <span class="json-key">"id"</span>:                 <span class="json-value"><span class="string">"array_example[5][2]"</span></span>              </div>              <div>                <span class="json-key">"name"</span>:                 <span class="json-value"><span class="string">"root"</span></span>              </div>              <div>                <span class="json-key">"type"</span>:                 <span class="json-value"><span class="string">"primitive"</span></span>              </div>              <div>                <span class="json-key">"value"</span>:                 <span class="json-value"><span class="string">"items"</span></span>              </div>              <div>                <span class="json-key">"expanded"</span>:                 <span class="json-value"><span class="boolean">false</span></span>              </div>              <div>                <span class="json-key">"children"</span>:                 <span class="json-value">              <div class="json-array">              </div></span>              </div>            </div></span>            </div>          </div></span>          </div>        </div></span>        </div>      </div></span>      </div>    </div></span>    </div>  </div></span>  </div></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <script>
+        
+        // Store the complete JSON data
+        const jsonData = JSON.parse("{\"id\": \"root\", \"name\": \"root\", \"type\": \"object\", \"expanded\": true, \"children\": [{\"id\": \"name\", \"name\": \"root\", \"type\": \"primitive\", \"value\": \"Sample JSON Data\", \"expanded\": false, \"children\": []}, {\"id\": \"version\", \"name\": \"root\", \"type\": \"primitive\", \"value\": \"1.0.0\", \"expanded\": false, \"children\": []}, {\"id\": \"description\", \"name\": \"root\", \"type\": \"primitive\", \"value\": \"A sample JSON file for testing the JSON to HTML Explorer tool\", \"expanded\": false, \"children\": []}, {\"id\": \"metadata\", \"name\": \"root\", \"type\": \"object\", \"expanded\": true, \"children\": [{\"id\": \"metadata.created\", \"name\": \"created\", \"type\": \"primitive\", \"value\": \"2024-01-15\", \"expanded\": false, \"children\": []}, {\"id\": \"metadata.author\", \"name\": \"author\", \"type\": \"primitive\", \"value\": \"JSON Explorer Tool\", \"expanded\": false, \"children\": []}, {\"id\": \"metadata.tags\", \"name\": \"tags\", \"type\": \"array\", \"expanded\": false, \"children\": [{\"id\": \"metadata.tags[0]\", \"name\": \"tags[0]\", \"type\": \"primitive\", \"value\": \"sample\", \"expanded\": false, \"children\": []}, {\"id\": \"metadata.tags[1]\", \"name\": \"tags[1]\", \"type\": \"primitive\", \"value\": \"test\", \"expanded\": false, \"children\": []}, {\"id\": \"metadata.tags[2]\", \"name\": \"tags[2]\", \"type\": \"primitive\", \"value\": \"demo\", \"expanded\": false, \"children\": []}]}]}, {\"id\": \"data\", \"name\": \"root\", \"type\": \"object\", \"expanded\": true, \"children\": [{\"id\": \"data.users\", \"name\": \"users\", \"type\": \"array\", \"expanded\": false, \"children\": [{\"id\": \"data.users[0]\", \"name\": \"users[0]\", \"type\": \"object\", \"expanded\": false, \"children\": [{\"id\": \"data.users[0].id\", \"name\": \"id\", \"type\": \"primitive\", \"value\": 1, \"expanded\": false, \"children\": []}, {\"id\": \"data.users[0].name\", \"name\": \"name\", \"type\": \"primitive\", \"value\": \"John Doe\", \"expanded\": false, \"children\": []}, {\"id\": \"data.users[0].email\", \"name\": \"email\", \"type\": \"primitive\", \"value\": \"john.doe@example.com\", \"expanded\": false, \"children\": []}, {\"id\": \"data.users[0].active\", \"name\": \"active\", \"type\": \"primitive\", \"value\": true, \"expanded\": false, \"children\": []}, {\"id\": \"data.users[0].profile\", \"name\": \"profile\", \"type\": \"object\", \"expanded\": false, \"children\": [{\"id\": \"data.users[0].profile.age\", \"name\": \"age\", \"type\": \"primitive\", \"value\": 30, \"expanded\": false, \"children\": []}, {\"id\": \"data.users[0].profile.location\", \"name\": \"location\", \"type\": \"primitive\", \"value\": \"New York\", \"expanded\": false, \"children\": []}, {\"id\": \"data.users[0].profile.interests\", \"name\": \"interests\", \"type\": \"array\", \"expanded\": false, \"children\": [{\"id\": \"data.users[0].profile.interests[0]\", \"name\": \"interests[0]\", \"type\": \"primitive\", \"value\": \"programming\", \"expanded\": false, \"children\": []}, {\"id\": \"data.users[0].profile.interests[1]\", \"name\": \"interests[1]\", \"type\": \"primitive\", \"value\": \"reading\", \"expanded\": false, \"children\": []}, {\"id\": \"data.users[0].profile.interests[2]\", \"name\": \"interests[2]\", \"type\": \"primitive\", \"value\": \"hiking\", \"expanded\": false, \"children\": []}]}]}]}, {\"id\": \"data.users[1]\", \"name\": \"users[1]\", \"type\": \"object\", \"expanded\": false, \"children\": [{\"id\": \"data.users[1].id\", \"name\": \"id\", \"type\": \"primitive\", \"value\": 2, \"expanded\": false, \"children\": []}, {\"id\": \"data.users[1].name\", \"name\": \"name\", \"type\": \"primitive\", \"value\": \"Jane Smith\", \"expanded\": false, \"children\": []}, {\"id\": \"data.users[1].email\", \"name\": \"email\", \"type\": \"primitive\", \"value\": \"jane.smith@example.com\", \"expanded\": false, \"children\": []}, {\"id\": \"data.users[1].active\", \"name\": \"active\", \"type\": \"primitive\", \"value\": false, \"expanded\": false, \"children\": []}, {\"id\": \"data.users[1].profile\", \"name\": \"profile\", \"type\": \"object\", \"expanded\": false, \"children\": [{\"id\": \"data.users[1].profile.age\", \"name\": \"age\", \"type\": \"primitive\", \"value\": 25, \"expanded\": false, \"children\": []}, {\"id\": \"data.users[1].profile.location\", \"name\": \"location\", \"type\": \"primitive\", \"value\": \"San Francisco\", \"expanded\": false, \"children\": []}, {\"id\": \"data.users[1].profile.interests\", \"name\": \"interests\", \"type\": \"array\", \"expanded\": false, \"children\": [{\"id\": \"data.users[1].profile.interests[0]\", \"name\": \"interests[0]\", \"type\": \"primitive\", \"value\": \"design\", \"expanded\": false, \"children\": []}, {\"id\": \"data.users[1].profile.interests[1]\", \"name\": \"interests[1]\", \"type\": \"primitive\", \"value\": \"travel\", \"expanded\": false, \"children\": []}, {\"id\": \"data.users[1].profile.interests[2]\", \"name\": \"interests[2]\", \"type\": \"primitive\", \"value\": \"cooking\", \"expanded\": false, \"children\": []}]}]}]}]}, {\"id\": \"data.settings\", \"name\": \"settings\", \"type\": \"object\", \"expanded\": false, \"children\": [{\"id\": \"data.settings.theme\", \"name\": \"theme\", \"type\": \"primitive\", \"value\": \"light\", \"expanded\": false, \"children\": []}, {\"id\": \"data.settings.language\", \"name\": \"language\", \"type\": \"primitive\", \"value\": \"en\", \"expanded\": false, \"children\": []}, {\"id\": \"data.settings.notifications\", \"name\": \"notifications\", \"type\": \"object\", \"expanded\": false, \"children\": [{\"id\": \"data.settings.notifications.email\", \"name\": \"email\", \"type\": \"primitive\", \"value\": true, \"expanded\": false, \"children\": []}, {\"id\": \"data.settings.notifications.push\", \"name\": \"push\", \"type\": \"primitive\", \"value\": false, \"expanded\": false, \"children\": []}, {\"id\": \"data.settings.notifications.sms\", \"name\": \"sms\", \"type\": \"primitive\", \"value\": true, \"expanded\": false, \"children\": []}]}]}, {\"id\": \"data.statistics\", \"name\": \"statistics\", \"type\": \"object\", \"expanded\": false, \"children\": [{\"id\": \"data.statistics.total_users\", \"name\": \"total_users\", \"type\": \"primitive\", \"value\": 2, \"expanded\": false, \"children\": []}, {\"id\": \"data.statistics.active_users\", \"name\": \"active_users\", \"type\": \"primitive\", \"value\": 1, \"expanded\": false, \"children\": []}, {\"id\": \"data.statistics.average_age\", \"name\": \"average_age\", \"type\": \"primitive\", \"value\": 27.5, \"expanded\": false, \"children\": []}]}]}, {\"id\": \"nested_example\", \"name\": \"root\", \"type\": \"object\", \"expanded\": true, \"children\": [{\"id\": \"nested_example.level1\", \"name\": \"level1\", \"type\": \"object\", \"expanded\": false, \"children\": [{\"id\": \"nested_example.level1.level2\", \"name\": \"level2\", \"type\": \"object\", \"expanded\": false, \"children\": [{\"id\": \"nested_example.level1.level2.level3\", \"name\": \"level3\", \"type\": \"object\", \"expanded\": false, \"children\": [{\"id\": \"nested_example.level1.level2.level3.level4\", \"name\": \"level4\", \"type\": \"object\", \"expanded\": false, \"children\": [{\"id\": \"nested_example.level1.level2.level3.level4.level5\", \"name\": \"level5\", \"type\": \"object\", \"expanded\": false, \"children\": [{\"id\": \"nested_example.level1.level2.level3.level4.level5.deep_value\", \"name\": \"deep_value\", \"type\": \"primitive\", \"value\": \"This is very deep!\", \"expanded\": false, \"children\": []}]}]}]}]}]}]}, {\"id\": \"array_example\", \"name\": \"root\", \"type\": \"array\", \"expanded\": true, \"children\": [{\"id\": \"array_example[0]\", \"name\": \"root\", \"type\": \"primitive\", \"value\": \"simple string\", \"expanded\": false, \"children\": []}, {\"id\": \"array_example[1]\", \"name\": \"root\", \"type\": \"primitive\", \"value\": 42, \"expanded\": false, \"children\": []}, {\"id\": \"array_example[2]\", \"name\": \"root\", \"type\": \"primitive\", \"value\": true, \"expanded\": false, \"children\": []}, {\"id\": \"array_example[3]\", \"name\": \"root\", \"type\": \"primitive\", \"value\": null, \"expanded\": false, \"children\": []}, {\"id\": \"array_example[4]\", \"name\": \"root\", \"type\": \"object\", \"expanded\": false, \"children\": [{\"id\": \"array_example[4].nested_object\", \"name\": \"nested_object\", \"type\": \"primitive\", \"value\": \"in array\", \"expanded\": false, \"children\": []}]}, {\"id\": \"array_example[5]\", \"name\": \"root\", \"type\": \"array\", \"expanded\": false, \"children\": [{\"id\": \"array_example[5][0]\", \"name\": \"root\", \"type\": \"primitive\", \"value\": \"nested\", \"expanded\": false, \"children\": []}, {\"id\": \"array_example[5][1]\", \"name\": \"root\", \"type\": \"primitive\", \"value\": \"array\", \"expanded\": false, \"children\": []}, {\"id\": \"array_example[5][2]\", \"name\": \"root\", \"type\": \"primitive\", \"value\": \"items\", \"expanded\": false, \"children\": []}]}]}]}");
+        
+        // TreeNode class for managing individual tree nodes
+        class TreeNode {
+            constructor(data, path, type, parent = null) {
+                this.data = data;
+                this.path = path;
+                this.type = type;
+                this.parent = parent;
+                this.children = [];
+                this.expanded = false;
+                this.selected = false;
+                this.element = null;
+                this.depth = parent ? parent.depth + 1 : 0;
+            }
+            
+            addChild(child) {
+                child.parent = this;
+                child.depth = this.depth + 1;
+                this.children.push(child);
+                return child;
+            }
+            
+            removeChild(child) {
+                const index = this.children.indexOf(child);
+                if (index > -1) {
+                    this.children.splice(index, 1);
+                    child.parent = null;
+                }
+                return child;
+            }
+            
+            toggleExpanded() {
+                this.expanded = !this.expanded;
+                if (this.element) {
+                    const children = this.element.querySelector('.tree-children');
+                    const toggle = this.element.querySelector('.expand-toggle');
+                    if (children && toggle) {
+                        if (this.expanded) {
+                            children.classList.add('expanded');
+                            toggle.textContent = '▼';
+                        } else {
+                            children.classList.remove('expanded');
+                            toggle.textContent = '▶';
+                        }
+                    }
+                }
+                return this.expanded;
+            }
+            
+            select() {
+                // Deselect all other nodes
+                TreeNode.deselectAll();
+                this.selected = true;
+                if (this.element) {
+                    this.element.classList.add('selected');
+                }
+                return this;
+            }
+            
+            deselect() {
+                this.selected = false;
+                if (this.element) {
+                    this.element.classList.remove('selected');
+                }
+                return this;
+            }
+            
+            static deselectAll() {
+                document.querySelectorAll('.tree-node').forEach(node => {
+                    node.classList.remove('selected');
+                });
+                TreeNode.selectedNodes.forEach(node => {
+                    node.selected = false;
+                });
+                TreeNode.selectedNodes = [];
+            }
+            
+            static selectedNodes = [];
+            
+            static createFromData(data, path = '', parent = null) {
+                let type = 'primitive';
+                if (Array.isArray(data)) {
+                    type = 'array';
+                } else if (data !== null && typeof data === 'object') {
+                    type = 'object';
+                }
+                
+                const node = new TreeNode(data, path, type, parent);
+                
+                if (type === 'object') {
+                    Object.keys(data).forEach(key => {
+                        const childPath = path ? `${path}.${key}` : key;
+                        const childNode = TreeNode.createFromData(data[key], childPath, node);
+                        node.addChild(childNode);
+                    });
+                } else if (type === 'array') {
+                    data.forEach((item, index) => {
+                        const childPath = `${path}[${index}]`;
+                        const childNode = TreeNode.createFromData(item, childPath, node);
+                        node.addChild(childNode);
+                    });
+                }
+                
+                return node;
+            }
+            
+            findNodeByPath(targetPath) {
+                if (this.path === targetPath) {
+                    return this;
+                }
+                
+                for (const child of this.children) {
+                    const found = child.findNodeByPath(targetPath);
+                    if (found) return found;
+                }
+                
+                return null;
+            }
+            
+            expandToPath(targetPath) {
+                if (this.path === targetPath) {
+                    return true;
+                }
+                
+                for (const child of this.children) {
+                    if (child.path === targetPath || targetPath.startsWith(child.path + '.')) {
+                        this.expanded = true;
+                        if (this.element) {
+                            const children = this.element.querySelector('.tree-children');
+                            const toggle = this.element.querySelector('.expand-toggle');
+                            if (children && toggle) {
+                                children.classList.add('expanded');
+                                toggle.textContent = '▼';
+                            }
+                        }
+                        return child.expandToPath(targetPath);
+                    }
+                }
+                
+                return false;
+            }
+            
+            getValue() {
+                return this.data;
+            }
+            
+            getDisplayName() {
+                if (this.parent) {
+                    if (this.parent.type === 'array') {
+                        const index = this.parent.children.indexOf(this);
+                        return `[${index}]`;
+                    } else {
+                        const parentPath = this.parent.path;
+                        const fullPath = this.path;
+                        return fullPath.substring(parentPath.length + 1);
+                    }
+                }
+                return this.path || 'root';
+            }
+            
+            getType() {
+                return this.type;
+            }
+            
+            hasChildren() {
+                return this.children.length > 0;
+            }
+            
+            getChildCount() {
+                return this.children.length;
+            }
+        }
+        
+        // ContentRenderer class for displaying JSON content
+        class ContentRenderer {
+            constructor() {
+                this.contentView = null;
+                this.currentNode = null;
+                this.config = {
+                    showLineNumbers: true,
+                    enableSyntaxHighlighting: true,
+                    maxDisplayLength: 1000,
+                    expandLevels: 2
+                };
+            }
+            
+            initialize(contentViewElement) {
+                this.contentView = contentViewElement;
+                return this;
+            }
+            
+            render(node) {
+                if (!this.contentView) {
+                    console.error('ContentRenderer not initialized');
+                    return;
+                }
+                
+                this.currentNode = node;
+                const html = this.generateHTML(node);
+                this.contentView.innerHTML = html;
+                
+                // Update path display
+                this.updatePathDisplay(node.path);
+                
+                return this;
+            }
+            
+            generateHTML(node) {
+                if (!node) {
+                    return '<div class="error">No node selected</div>';
+                }
+                
+                const data = node.getValue();
+                const type = node.getType();
+                
+                switch (type) {
+                    case 'object':
+                        return this.renderObject(data, node);
+                    case 'array':
+                        return this.renderArray(data, node);
+                    case 'primitive':
+                        return this.renderPrimitive(data);
+                    default:
+                        return '<div class="error">Unknown data type</div>';
+                }
+            }
+            
+            renderObject(obj, node) {
+                if (!obj || typeof obj !== 'object') {
+                    return '<div class="json-object">{}</div>';
+                }
+                
+                const keys = Object.keys(obj);
+                if (keys.length === 0) {
+                    return '<div class="json-object">{}</div>';
+                }
+                
+                let html = '<div class="json-object">';
+                html += '<div class="json-object-header">Object with ' + keys.length + ' properties</div>';
+                
+                keys.forEach(key => {
+                    const value = obj[key];
+                    const valueType = this.getTypeName(value);
+                    const displayValue = this.formatValue(value, 0);
+                    
+                    html += `<div class="json-property">`;
+                    html += `<span class="json-key">"${key}"</span>: `;
+                    html += `<span class="json-value ${valueType}-value">${displayValue}</span>`;
+                    html += `</div>`;
+                });
+                
+                html += '</div>';
+                return html;
+            }
+            
+            renderArray(arr, node) {
+                if (!Array.isArray(arr)) {
+                    return '<div class="json-array">[]</div>';
+                }
+                
+                if (arr.length === 0) {
+                    return '<div class="json-array">[]</div>';
+                }
+                
+                let html = '<div class="json-array">';
+                html += '<div class="json-array-header">Array with ' + arr.length + ' items</div>';
+                
+                arr.forEach((item, index) => {
+                    const valueType = this.getTypeName(item);
+                    const displayValue = this.formatValue(item, 0);
+                    
+                    html += `<div class="json-array-item">`;
+                    html += `<span class="json-index">[${index}]</span>: `;
+                    html += `<span class="json-value ${valueType}-value">${displayValue}</span>`;
+                    html += `</div>`;
+                });
+                
+                html += '</div>';
+                return html;
+            }
+            
+            renderPrimitive(value) {
+                const type = this.getTypeName(value);
+                const displayValue = this.formatValue(value, 0);
+                
+                return `<div class="json-primitive">
+                    <span class="json-value ${type}-value">${displayValue}</span>
+                    <div class="json-type-info">Type: ${type}</div>
+                </div>`;
+            }
+            
+            formatValue(value, level = 0) {
+                if (level > this.config.expandLevels) {
+                    return this.getTypeName(value) + '...';
+                }
+                
+                if (value === null) {
+                    return '<span class="json-null">null</span>';
+                }
+                
+                if (typeof value === 'boolean') {
+                    return `<span class="json-boolean">${value}</span>`;
+                }
+                
+                if (typeof value === 'number') {
+                    return `<span class="json-number">${value}</span>`;
+                }
+                
+                if (typeof value === 'string') {
+                    const truncated = value.length > this.config.maxDisplayLength 
+                        ? value.substring(0, this.config.maxDisplayLength) + '...'
+                        : value;
+                    return `<span class="json-string">"${truncated}"</span>`;
+                }
+                
+                if (Array.isArray(value)) {
+                    if (level >= this.config.expandLevels) {
+                        return `<span class="json-array">[Array with ${value.length} items]</span>`;
+                    }
+                    
+                    let html = '<span class="json-array">[';
+                    const items = value.slice(0, 5); // Show first 5 items
+                    items.forEach((item, index) => {
+                        if (index > 0) html += ', ';
+                        html += this.formatValue(item, level + 1);
+                    });
+                    if (value.length > 5) {
+                        html += `, ... (+${value.length - 5} more)`;
+                    }
+                    html += ']</span>';
+                    return html;
+                }
+                
+                if (typeof value === 'object') {
+                    if (level >= this.config.expandLevels) {
+                        const keys = Object.keys(value);
+                        return `<span class="json-object">{Object with ${keys.length} properties}</span>`;
+                    }
+                    
+                    let html = '<span class="json-object">{';
+                    const keys = Object.keys(value).slice(0, 3); // Show first 3 properties
+                    keys.forEach((key, index) => {
+                        if (index > 0) html += ', ';
+                        html += `"${key}": ${this.formatValue(value[key], level + 1)}`;
+                    });
+                    if (Object.keys(value).length > 3) {
+                        html += `, ... (+${Object.keys(value).length - 3} more)`;
+                    }
+                    html += '}</span>';
+                    return html;
+                }
+                
+                return `<span class="json-unknown">${value}</span>`;
+            }
+            
+            getTypeName(value) {
+                if (value === null) return 'null';
+                if (typeof value === 'boolean') return 'boolean';
+                if (typeof value === 'number') return 'number';
+                if (typeof value === 'string') return 'string';
+                if (Array.isArray(value)) return 'array';
+                if (typeof value === 'object') return 'object';
+                return 'unknown';
+            }
+            
+            updatePathDisplay(path) {
+                const pathElement = document.getElementById('current-path');
+                if (pathElement) {
+                    pathElement.textContent = path || 'root';
+                }
+            }
+            
+            setConfig(newConfig) {
+                this.config = {...this.config, ...newConfig};
+                return this;
+            }
+            
+            getConfig() {
+                return {...this.config};
+            }
+            
+            clear() {
+                if (this.contentView) {
+                    this.contentView.innerHTML = '';
+                }
+                this.currentNode = null;
+                return this;
+            }
+        }
+        
+        // Event Handling System
+        class EventHandler {
+            constructor() {
+                this.rootNode = null;
+                this.contentRenderer = null;
+                this.selectedNode = null;
+                this.contextMenu = null;
+                this.isInitialized = false;
+            }
+            
+            initialize(rootNode, contentRenderer) {
+                this.rootNode = rootNode;
+                this.contentRenderer = contentRenderer;
+                this.setupEventListeners();
+                this.createContextMenu();
+                this.isInitialized = true;
+                return this;
+            }
+            
+            setupEventListeners() {
+                // Tree node click events
+                document.addEventListener('click', (e) => this.handleNodeClick(e));
+                document.addEventListener('dblclick', (e) => this.handleNodeDoubleClick(e));
+                document.addEventListener('contextmenu', (e) => this.handleContextMenu(e));
+                
+                // Keyboard events
+                document.addEventListener('keydown', (e) => this.handleKeyboard(e));
+                
+                // Global click to close context menu
+                document.addEventListener('click', (e) => this.closeContextMenu(e));
+                
+                // Expand/collapse all buttons
+                this.setupToolbarEvents();
+            }
+            
+            handleNodeClick(e) {
+                const treeNode = e.target.closest('.tree-node');
+                if (!treeNode) return;
+                
+                const expandToggle = e.target.closest('.expand-toggle');
+                if (expandToggle) {
+                    this.toggleNodeExpansion(treeNode);
+                    return;
+                }
+                
+                this.selectNode(treeNode);
+            }
+            
+            handleNodeDoubleClick(e) {
+                const treeNode = e.target.closest('.tree-node');
+                if (!treeNode) return;
+                
+                const expandToggle = e.target.closest('.expand-toggle');
+                if (expandToggle) return; // Don't double-expand toggle buttons
+                
+                this.toggleNodeExpansion(treeNode);
+            }
+            
+            handleContextMenu(e) {
+                const treeNode = e.target.closest('.tree-node');
+                if (!treeNode) return;
+                
+                e.preventDefault();
+                this.showContextMenu(e, treeNode);
+            }
+            
+            handleKeyboard(e) {
+                if (!this.selectedNode) return;
+                
+                switch (e.key) {
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        this.selectPreviousNode();
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        this.selectNextNode();
+                        break;
+                    case 'ArrowLeft':
+                        e.preventDefault();
+                        this.collapseSelectedNode();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        this.expandSelectedNode();
+                        break;
+                    case 'Enter':
+                    case ' ':
+                        e.preventDefault();
+                        this.toggleSelectedNodeExpansion();
+                        break;
+                    case 'Escape':
+                        this.closeContextMenu();
+                        break;
+                }
+            }
+            
+            selectNode(treeNode) {
+                // Remove previous selection
+                if (this.selectedNode) {
+                    this.selectedNode.classList.remove('selected');
+                }
+                
+                // Add selection to current node
+                treeNode.classList.add('selected');
+                this.selectedNode = treeNode;
+                
+                // Update content
+                const nodePath = treeNode.getAttribute('data-path');
+                const node = this.rootNode.findNodeByPath(nodePath);
+                if (node && this.contentRenderer) {
+                    this.contentRenderer.render(node);
+                }
+            }
+            
+            toggleNodeExpansion(treeNode) {
+                const nodePath = treeNode.getAttribute('data-path');
+                const node = this.rootNode.findNodeByPath(nodePath);
+                
+                if (node) {
+                    node.toggleExpanded();
+                }
+            }
+            
+            selectPreviousNode() {
+                if (!this.selectedNode) return;
+                
+                const prevNode = this.selectedNode.previousElementSibling;
+                if (prevNode && prevNode.classList.contains('tree-node')) {
+                    this.selectNode(prevNode);
+                    this.scrollToNode(prevNode);
+                }
+            }
+            
+            selectNextNode() {
+                if (!this.selectedNode) return;
+                
+                const nextNode = this.selectedNode.nextElementSibling;
+                if (nextNode && nextNode.classList.contains('tree-node')) {
+                    this.selectNode(nextNode);
+                    this.scrollToNode(nextNode);
+                }
+            }
+            
+            expandSelectedNode() {
+                if (!this.selectedNode) return;
+                
+                const nodePath = this.selectedNode.getAttribute('data-path');
+                const node = this.rootNode.findNodeByPath(nodePath);
+                
+                if (node && !node.expanded) {
+                    node.toggleExpanded();
+                }
+            }
+            
+            collapseSelectedNode() {
+                if (!this.selectedNode) return;
+                
+                const nodePath = this.selectedNode.getAttribute('data-path');
+                const node = this.rootNode.findNodeByPath(nodePath);
+                
+                if (node && node.expanded) {
+                    node.toggleExpanded();
+                }
+            }
+            
+            toggleSelectedNodeExpansion() {
+                if (!this.selectedNode) return;
+                
+                const nodePath = this.selectedNode.getAttribute('data-path');
+                const node = this.rootNode.findNodeByPath(nodePath);
+                
+                if (node) {
+                    node.toggleExpanded();
+                }
+            }
+            
+            scrollToNode(node) {
+                node.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            
+            createContextMenu() {
+                this.contextMenu = document.createElement('div');
+                this.contextMenu.className = 'context-menu';
+                this.contextMenu.innerHTML = `
+                    <div class="context-menu-item" data-action="expand">Expand</div>
+                    <div class="context-menu-item" data-action="collapse">Collapse</div>
+                    <div class="context-menu-separator"></div>
+                    <div class="context-menu-item" data-action="expand-all">Expand All Children</div>
+                    <div class="context-menu-item" data-action="collapse-all">Collapse All Children</div>
+                    <div class="context-menu-separator"></div>
+                    <div class="context-menu-item" data-action="copy-path">Copy Path</div>
+                    <div class="context-menu-item" data-action="copy-value">Copy Value</div>
+                `;
+                
+                document.body.appendChild(this.contextMenu);
+                
+                // Add event listeners to context menu items
+                this.contextMenu.addEventListener('click', (e) => this.handleContextMenuAction(e));
+            }
+            
+            showContextMenu(e, treeNode) {
+                this.contextMenu.style.display = 'block';
+                this.contextMenu.style.left = e.pageX + 'px';
+                this.contextMenu.style.top = e.pageY + 'px';
+                
+                // Store reference to the target node
+                this.contextMenu.setAttribute('data-target-node', treeNode.getAttribute('data-path'));
+            }
+            
+            closeContextMenu(e) {
+                if (this.contextMenu && (!e || !this.contextMenu.contains(e.target))) {
+                    this.contextMenu.style.display = 'none';
+                }
+            }
+            
+            handleContextMenuAction(e) {
+                const menuItem = e.target.closest('.context-menu-item');
+                if (!menuItem) return;
+                
+                const action = menuItem.getAttribute('data-action');
+                const targetPath = this.contextMenu.getAttribute('data-target-node');
+                const node = this.rootNode.findNodeByPath(targetPath);
+                
+                if (!node) return;
+                
+                switch (action) {
+                    case 'expand':
+                        if (!node.expanded) node.toggleExpanded();
+                        break;
+                    case 'collapse':
+                        if (node.expanded) node.toggleExpanded();
+                        break;
+                    case 'expand-all':
+                        this.expandAllChildren(node);
+                        break;
+                    case 'collapse-all':
+                        this.collapseAllChildren(node);
+                        break;
+                    case 'copy-path':
+                        this.copyToClipboard(node.path);
+                        break;
+                    case 'copy-value':
+                        this.copyToClipboard(JSON.stringify(node.getValue(), null, 2));
+                        break;
+                }
+                
+                this.closeContextMenu();
+            }
+            
+            expandAllChildren(node) {
+                node.expanded = true;
+                if (node.element) {
+                    const children = node.element.querySelector('.tree-children');
+                    const toggle = node.element.querySelector('.expand-toggle');
+                    if (children && toggle) {
+                        children.classList.add('expanded');
+                        toggle.textContent = '▼';
+                    }
+                }
+                
+                node.children.forEach(child => this.expandAllChildren(child));
+            }
+            
+            collapseAllChildren(node) {
+                node.expanded = false;
+                if (node.element) {
+                    const children = node.element.querySelector('.tree-children');
+                    const toggle = node.element.querySelector('.expand-toggle');
+                    if (children && toggle) {
+                        children.classList.remove('expanded');
+                        toggle.textContent = '▶';
+                    }
+                }
+                
+                node.children.forEach(child => this.collapseAllChildren(child));
+            }
+            
+            copyToClipboard(text) {
+                navigator.clipboard.writeText(text).then(() => {
+                    this.showNotification('Copied to clipboard!');
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    this.showNotification('Copied to clipboard!');
+                });
+            }
+            
+            showNotification(message) {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.textContent = message;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.classList.add('show');
+                }, 100);
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 2000);
+            }
+            
+            setupToolbarEvents() {
+                // Expand all button
+                const expandAllBtn = document.getElementById('expand-all-btn');
+                if (expandAllBtn) {
+                    expandAllBtn.addEventListener('click', () => {
+                        this.expandAllChildren(this.rootNode);
+                    });
+                }
+                
+                // Collapse all button
+                const collapseAllBtn = document.getElementById('collapse-all-btn');
+                if (collapseAllBtn) {
+                    collapseAllBtn.addEventListener('click', () => {
+                        this.collapseAllChildren(this.rootNode);
+                    });
+                }
+            }
+        }
+        
+        // Current selected node and root node
+        let selectedNode = null;
+        let rootNode = null;
+        let contentRenderer = null;
+        let eventHandler = null;
+        
+        // Initialize the explorer
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeExplorer();
+        });
+        
+        function initializeExplorer() {
+            // Create tree structure from JSON data
+            rootNode = TreeNode.createFromData(jsonData);
+            
+            // Initialize content renderer
+            const contentView = document.getElementById('content-view');
+            contentRenderer = new ContentRenderer().initialize(contentView);
+            
+            // Initialize event handler
+            eventHandler = new EventHandler().initialize(rootNode, contentRenderer);
+            
+            // Select root node by default
+            selectNode('root');
+        }
+        
+        function selectNode(path) {
+            // Remove previous selection
+            if (selectedNode) {
+                selectedNode.classList.remove('selected');
+            }
+            
+            // Add selection to current node
+            const nodeElement = document.querySelector(`[data-path="${path}"]`);
+            if (nodeElement) {
+                const contentElement = nodeElement.querySelector('.tree-node-content');
+                contentElement.classList.add('selected');
+                selectedNode = contentElement;
+            }
+            
+            // Update content using ContentRenderer
+            const node = rootNode.findNodeByPath(path);
+            if (node && contentRenderer) {
+                contentRenderer.render(node);
+            }
+        }
+        
+        function updateContentView(path) {
+            const contentView = document.getElementById('content-view');
+            const nodeData = getNodeByPath(jsonData, path);
+            
+            if (nodeData) {
+                contentView.innerHTML = formatNodeForDisplay(nodeData);
+            } else {
+                contentView.innerHTML = '<div class="error">Node not found</div>';
+            }
+        }
+        
+        function getNodeByPath(data, path) {
+            if (path === 'root') return data;
+            
+            // Simple path resolution for demo
+            const parts = path.split('.');
+            let current = data;
+            
+            for (const part of parts) {
+                if (current && current.children) {
+                    current = current.children.find(child => child.id === part);
+                } else {
+                    return null;
+                }
+            }
+            
+            return current;
+        }
+        
+        function formatNodeForDisplay(node) {
+            if (!node) return '<div class="error">Node not found</div>';
+            
+            if (node.type === 'primitive') {
+                return `<div class="json-value">${formatValue(node.value)}</div>`;
+            } else if (node.type === 'object') {
+                return formatObjectForDisplay(node);
+            } else if (node.type === 'array') {
+                return formatArrayForDisplay(node);
+            } else {
+                return '<div class="error">Unknown node type</div>';
+            }
+        }
+        
+        function formatValue(value) {
+            if (value === null) return '<span class="json-null">null</span>';
+            if (typeof value === 'boolean') return `<span class="json-boolean">${value}</span>`;
+            if (typeof value === 'number') return `<span class="json-number">${value}</span>`;
+            if (typeof value === 'string') return `<span class="json-string">"${value}"</span>`;
+            return `<span class="json-unknown">${value}</span>`;
+        }
+        
+        function formatObjectForDisplay(node) {
+            if (!node.children) return '<div class="json-object">{}</div>';
+            
+            let html = '<div class="json-object">';
+            node.children.forEach(child => {
+                html += `<div><span class="json-key">"${child.name}"</span>: ${formatNodeForDisplay(child)}</div>`;
+            });
+            html += '</div>';
+            return html;
+        }
+        
+        function formatArrayForDisplay(node) {
+            if (!node.children) return '<div class="json-array">[]</div>';
+            
+            let html = '<div class="json-array">';
+            node.children.forEach((child, index) => {
+                html += `<div class="json-array-item"><span class="json-key">[${index}]</span>: ${formatNodeForDisplay(child)}</div>`;
+            });
+            html += '</div>';
+            return html;
+        }
+    
+    </script>
+</body>
+</html>
