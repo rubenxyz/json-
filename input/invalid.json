@@ -1,0 +1,123 @@
+{
+  "name": "Invalid JSON Test",
+  "description": "This file has JSON syntax errors",
+  "data": {
+    "valid_object": {
+      "key": "value"
+    },
+    "invalid_object": {
+      "missing_quote": value,
+      "unclosed_string": "this string is not closed
+    },
+    "array_with_errors": [
+      "valid_item",
+      invalid_item,
+      "another_valid_item"
+    ]
+  },
+  "nested": {
+    "level1": {
+      "level2": {
+        "level3": {
+          "level4": {
+            "level5": {
+              "level6": {
+                "level7": {
+                  "level8": {
+                    "level9": {
+                      "level10": {
+                        "level11": {
+                          "level12": {
+                            "level13": {
+                              "level14": {
+                                "level15": {
+                                  "level16": {
+                                    "level17": {
+                                      "level18": {
+                                        "level19": {
+                                          "level20": {
+                                            "level21": {
+                                              "level22": {
+                                                "level23": {
+                                                  "level24": {
+                                                    "level25": {
+                                                      "level26": {
+                                                        "level27": {
+                                                          "level28": {
+                                                            "level29": {
+                                                              "level30": {
+                                                                "level31": {
+                                                                  "level32": {
+                                                                    "level33": {
+                                                                      "level34": {
+                                                                        "level35": {
+                                                                          "level36": {
+                                                                            "level37": {
+                                                                              "level38": {
+                                                                                "level39": {
+                                                                                  "level40": {
+                                                                                    "level41": {
+                                                                                      "level42": {
+                                                                                        "level43": {
+                                                                                          "level44": {
+                                                                                            "level45": {
+                                                                                              "level46": {
+                                                                                                "level47": {
+                                                                                                  "level48": {
+                                                                                                    "level49": {
+                                                                                                      "level50": {
+                                                                                                        "level51": {
+                                                                                                          "too_deep": "This is too deep!"
+                                                                                                        }
+                                                                                                      }
+                                                                                                    }
+                                                                                                  }
+                                                                                                }
+                                                                                              }
+                                                                                            }
+                                                                                          }
+                                                                                        }
+                                                                                      }
+                                                                                    }
+                                                                                  }
+                                                                                }
+                                                                              }
+                                                                            }
+                                                                          }
+                                                                        }
+                                                                      }
+                                                                    }
+                                                                  }
+                                                                }
+                                                              }
+                                                            }
+                                                          }
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+} 

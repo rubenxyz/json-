@@ -1,265 +1,244 @@
-# Markdown/XML to JSON Converter
+# JSON to HTML Explorer Tool
 
-A flexible Python tool that converts markdown folders or XML files to JSON output optimized for LLM parsing. The tool automatically detects input type, preserves folder structure, and generates LLM-friendly JSON with hierarchical organization.
+A powerful tool that converts JSON files into interactive HTML explorers with a Windows Explorer-like interface. Navigate through complex JSON structures with ease using an intuitive tree view and content viewer.
 
-## Features
+## 🚀 Features
 
-- **Dual Input Support**: Markdown folders OR XML files
-- **JSON Output**: LLM-optimized JSON format
-- **Automatic Detection**: Detects input type automatically
-- **Header-Based Parsing**: Uses markdown headers (H1, H2, H3, etc.) to determine structure
-- **Folder Structure Preservation**: Maintains complete folder hierarchy in JSON
-- **Smart Filenames**: JSON files named after actual content folders
-- **Timestamped Output**: Creates timestamped output directories
-- **Comprehensive Logging**: Detailed logs and processing summaries
-- **Unit Testing**: Includes comprehensive test suite
+- **Interactive Tree View**: Navigate JSON structure with expandable/collapsible nodes
+- **Content Viewer**: View detailed JSON content with syntax highlighting
+- **Windows Explorer-like Interface**: Familiar two-pane layout
+- **File Validation**: Comprehensive JSON validation with detailed error messages
+- **Error Handling**: Robust error handling with actionable guidance
+- **Responsive Design**: Clean, modern interface that works on different screen sizes
+- **Batch Processing**: Process multiple JSON files with timestamped outputs
 
-## Installation
+## 📋 Requirements
 
-1. **Clone or download** the script files to your project directory
-2. **Install dependencies**:
-   ```bash
-   pip install loguru
-   ```
-   Or use the requirements file:
-   ```bash
-   pip install -r requirements.txt
-   ```
+- Python 3.7+
+- loguru (for logging)
 
-## Usage
+## 🛠️ Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/rubenxyz/json->html_tool.git
+cd json->html_tool
+```
+
+2. Create a virtual environment:
+```bash
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+## 🎯 Usage
 
 ### Basic Usage
 
-**Convert Markdown Folder:**
+Convert a JSON file to HTML:
 ```bash
-python markdown_xml_to_json.py input/folder_name
+python json_to_html.py input/sample.json
 ```
 
-**Convert XML File:**
+### Advanced Usage
+
+Specify custom output path:
 ```bash
-python markdown_xml_to_json.py input/document.xml
+python json_to_html.py input/sample.json output/custom_name.html
 ```
 
-**Convert Entire Input Directory:**
-```bash
-python markdown_xml_to_json.py input
-```
+### Input/Output Structure
 
-**Specify Output File:**
-```bash
-python markdown_xml_to_json.py input/folder_name -o output/custom_name.json
-```
+The tool follows a simple workflow:
+- **Input**: JSON files placed in the `input/` directory
+- **Output**: HTML files generated in timestamped folders under `output/`
 
-### Input Structure
-
-**Markdown Folders:**
-```
-input/
-├── Fal Documentation/
-│   ├── 01. fal/
-│   │   ├── 01.1 Introduction.md
-│   │   └── 01.2 Quickstart.md
-│   └── 02. Models/
-│       ├── model1.md
-│       └── model2.md
-```
-
-**XML Files:**
-```
-input/
-└── document.xml
-```
-
-### Output Structure
-
+Example output structure:
 ```
 output/
-└── 2025-07-20_20-39-46/
-    ├── Fal Documentation.json
+├── 2025-07-21_07-31-40/
+│   ├── sample.html
+│   ├── conversion_log.json
+│   └── conversion_summary.md
+└── 2025-07-21_08-15-22/
+    ├── another_file.html
     ├── conversion_log.json
     └── conversion_summary.md
 ```
 
-### Input Structure
+## 🎨 Interface Features
 
-The script automatically detects your folder structure:
+### Tree View (Left Panel)
+- **📁 Objects**: Expandable folders for JSON objects
+- **📋 Arrays**: Expandable lists for JSON arrays  
+- **📄 Primitives**: Individual values (strings, numbers, booleans, null)
+- **Count Indicators**: Shows number of items in objects/arrays
+- **Auto-expansion**: First two levels automatically expanded
 
-- **Folder Names**: Used as documentation names in XML output
-- **File Names**: Preserved in XML with unique IDs
-- **Header Structure**: Determines XML hierarchy
+### Content Viewer (Right Panel)
+- **Syntax Highlighting**: Color-coded JSON values by type
+- **Path Display**: Shows current node path
+- **File Information**: Displays file name, size, and type
+- **Formatted Display**: Clean, readable JSON presentation
 
-### Markdown Header Structure
+### Navigation
+- **Click to Select**: Click any node to view its content
+- **Expand/Collapse**: Click arrow icons to expand/collapse nodes
+- **Visual Feedback**: Selected nodes are highlighted
 
-The script uses markdown headers to create XML hierarchy:
+## 🔧 Configuration
 
-```markdown
-# H1 - Top Level Section
-Content for H1 section
+The tool supports various configuration options:
 
-## H2 - Main Section
-Content for H2 section
-
-### H3 - Subsection
-Content for H3 section
-
-#### H4 - Sub-subsection
-Content for H4 section
-
-##### H5 - Deep subsection
-Content for H5 section
-
-###### H6 - Deepest subsection
-Content for H6 section
-```
-
-### XML Output Structure
-
-Each folder generates a separate XML file with this structure:
-
-```xml
-<?xml version="1.0" ?>
-<documentation name="folder-name" version="1.0" processed_at="2025-01-20_14-30-25" source_folder="folder-name">
-  <folder id="01" name="folder-name">
-    <file id="01.01" name="file1.md" path="input/folder1/file1.md">
-      <section id="1.1" title="Introduction" level="2">
-        <content>This is the introduction content.</content>
-        <subsection id="1.1.1" title="Prerequisites" level="3">
-          <content>Install Python 3.7+.</content>
-        </subsection>
-      </section>
-    </file>
-  </folder>
-</documentation>
-```
-
-## Configuration
-
-### Auto-Generated Configuration
-
-The script automatically generates configuration from your folder structure:
-
-- **Documentation Name**: Uses folder name
-- **Version**: Set to "1.0"
-- **Folder IDs**: Automatically assigned based on alphabetical order
-
-### Manual Configuration (Optional)
-
-You can create a `config.json` file in the input directory to override defaults:
-
-```json
-{
-  "documentation_name": "Custom Documentation Name",
-  "version": "2.0",
-  "folders": {
-    "folder1": "01",
-    "folder2": "02",
-    "another-folder": "03"
-  }
+```python
+config = {
+    'title': 'JSON Explorer',           # HTML page title
+    'theme': 'light',                   # Theme (light/dark)
+    'auto_expand_levels': 2,           # Auto-expand first N levels
+    'show_line_numbers': True,         # Show line numbers in content
+    'enable_syntax_highlighting': True # Enable syntax highlighting
 }
 ```
 
-## Output Files
+## ⚠️ Error Handling
 
-### XML Files
-- **`{folder-name}.xml`**: XML output for each input folder
-- **`processing_log.xml`**: Detailed machine-readable log
+The tool provides comprehensive error handling for various scenarios:
 
-### Summary Files
-- **`processing_summary.md`**: Human-readable summary with statistics
+### File Errors
+- **File Not Found**: Clear path guidance
+- **Permission Denied**: Permission troubleshooting
+- **Empty Files**: Validation for empty JSON files
+- **File Too Large**: Size limit enforcement (100MB max)
+- **Invalid Extension**: Only .json files supported
 
-## Error Handling
+### JSON Errors
+- **Syntax Errors**: Line-specific error reporting
+- **Encoding Issues**: UTF-8 encoding validation
+- **Structure Problems**: Deep nesting and size validation
+- **Invalid Types**: Unsupported data type detection
 
-The script includes comprehensive error handling:
+### Error Messages
+Each error includes:
+- Clear error description
+- Error code for programmatic handling
+- Actionable guidance for resolution
+- Line numbers for syntax errors
 
-- **File Reading Errors**: Graceful handling of encoding and permission issues
-- **XML Generation Errors**: Validation and error reporting
-- **Configuration Errors**: Fallback to auto-generated configuration
-- **Logging**: Detailed logs for debugging
+## 📁 Project Structure
 
-## Examples
-
-### Example 1: Simple Documentation
-
-**Input Structure:**
 ```
-input/
-└── getting-started/
-    ├── introduction.md
-    └── installation.md
-```
-
-**Markdown Content (introduction.md):**
-```markdown
-# Getting Started
-
-Welcome to our documentation.
-
-## Introduction
-
-This guide will help you get started.
-
-### Prerequisites
-
-- Python 3.7+
-- Basic knowledge of markdown
+json->html_tool/
+├── json_to_html.py          # Main entry point
+├── input_detector.py        # JSON file validation
+├── json_parser.py          # JSON parsing and analysis
+├── html_generator.py       # HTML generation
+├── requirements.txt        # Python dependencies
+├── input/                  # Input JSON files
+│   ├── sample.json
+│   └── invalid.json
+├── output/                 # Generated HTML files
+└── .taskmaster/           # Project management
+    ├── docs/
+    │   └── prd.txt        # Product requirements
+    └── tasks/
+        └── tasks.json     # Development tasks
 ```
 
-**Generated XML:**
-```xml
-<documentation name="getting-started" version="1.0">
-  <folder id="01" name="getting-started">
-    <file id="01.01" name="introduction.md">
-      <section id="" title="Getting Started" level="2">
-        <content>Welcome to our documentation.</content>
-        <subsection id="" title="Introduction" level="3">
-          <content>This guide will help you get started.</content>
-          <subsubsection id="" title="Prerequisites" level="4">
-            <content>- Python 3.7+</content>
-          </subsubsection>
-        </subsection>
-      </section>
-    </file>
-  </folder>
-</documentation>
+## 🧪 Testing
+
+### Test Cases Included
+
+1. **Valid JSON**: `input/sample.json` - Comprehensive test data
+2. **Invalid JSON**: `input/invalid.json` - Error handling tests
+
+### Running Tests
+
+Test with valid JSON:
+```bash
+python json_to_html.py input/sample.json
 ```
 
-## Troubleshooting
+Test error handling:
+```bash
+python json_to_html.py input/invalid.json
+python json_to_html.py input/nonexistent.json
+python json_to_html.py input_detector.py
+```
+
+## 🔍 Troubleshooting
 
 ### Common Issues
 
-1. **No output generated**: Check that input directory exists and contains markdown files
-2. **Encoding errors**: Ensure markdown files are UTF-8 encoded
-3. **Permission errors**: Check file and directory permissions
-4. **Empty XML files**: Verify markdown files contain headers
-
-### Debugging
-
-- Check `processing_log.xml` for detailed error information
-- Review `processing_summary.md` for processing statistics
-- Enable debug logging by modifying the log level in `main.py`
-
-## Development
-
-### Project Structure
-```
-markdown_to_xml_tool/
-├── main.py              # Main orchestration script
-├── parser.py            # Markdown parsing and text cleaning
-├── xml_generator.py     # XML generation and file processing
-├── requirements.txt     # Python dependencies
-├── README.md           # This documentation
-├── tests/              # Unit tests
-│   ├── __init__.py
-│   └── test_basic.py
-├── input/              # Input directory (create your folders here)
-└── output/             # Output directory (auto-generated)
-```
-
-### Running Tests
+**"ModuleNotFoundError: No module named 'loguru'"**
 ```bash
-python -m unittest tests.test_basic -v
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-## License
+**"Input file must have .json extension"**
+- Ensure your file has a `.json` extension
+- Only JSON files are supported
 
-This project is open source and available under the MIT License. 
+**"Invalid JSON format"**
+- Check the JSON syntax using a JSON validator
+- Look for missing quotes, commas, or brackets
+- Ensure proper UTF-8 encoding
+
+**"File is too large"**
+- Split large JSON files into smaller chunks
+- Maximum file size is 100MB
+
+### Getting Help
+
+1. Check the conversion logs in the output directory
+2. Review the error messages for specific guidance
+3. Ensure your JSON file is valid using online validators
+4. Check file permissions and encoding
+
+## 🚀 Development
+
+### Architecture
+
+The tool follows a modular architecture:
+
+1. **Input Detection** (`input_detector.py`): Validates and analyzes JSON files
+2. **JSON Parsing** (`json_parser.py`): Parses JSON and prepares tree structure
+3. **HTML Generation** (`html_generator.py`): Creates interactive HTML interface
+4. **Main Orchestration** (`json_to_html.py`): Coordinates the entire process
+
+### Adding Features
+
+To extend the tool:
+
+1. **New Validation Rules**: Add to `validate_json_structure()` in `input_detector.py`
+2. **UI Enhancements**: Modify CSS and JavaScript in `html_generator.py`
+3. **New Output Formats**: Extend `html_generator.py` with new generators
+4. **Configuration Options**: Add to the config dictionary in `json_to_html.py`
+
+## 📄 License
+
+This project is open source and available under the MIT License.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
+
+## 📞 Support
+
+For issues, questions, or contributions:
+- Open an issue on GitHub
+- Check the troubleshooting section
+- Review the error logs in the output directory
+
+---
+
+**Happy JSON Exploring! 🎉** 

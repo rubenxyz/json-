@@ -54,6 +54,48 @@ def convert_to_html(input_path, output_path=None, config=None):
         logger.info(f"Input type: {input_info['type']}")
         logger.info(f"Validation: {input_info['validation']}")
         
+        # Handle validation errors
+        if input_info['validation'] == 'error':
+            error_msg = input_info['error']
+            error_code = input_info.get('error_code', 'UNKNOWN_ERROR')
+            
+            logger.error(f"❌ Input validation failed: {error_msg}")
+            
+            # Provide specific error guidance
+            if error_code == 'FILE_NOT_FOUND':
+                logger.error("💡 Make sure the file path is correct and the file exists")
+            elif error_code == 'NOT_A_FILE':
+                logger.error("💡 The path must point to a file, not a directory")
+            elif error_code == 'EMPTY_FILE':
+                logger.error("💡 The JSON file is empty. Please provide a valid JSON file")
+            elif error_code == 'FILE_TOO_LARGE':
+                logger.error("💡 Consider splitting large JSON files or using a different approach")
+            elif error_code == 'INVALID_EXTENSION':
+                logger.error("💡 Only .json files are supported")
+            elif error_code == 'JSON_DECODE_ERROR':
+                line = input_info.get('line')
+                if line:
+                    logger.error(f"💡 Check line {line} for syntax errors")
+                else:
+                    logger.error("💡 Check the JSON syntax for errors")
+            elif error_code == 'ENCODING_ERROR':
+                logger.error("💡 Ensure the file is saved with UTF-8 encoding")
+            elif error_code == 'PERMISSION_ERROR':
+                logger.error("💡 Check file permissions or try running with elevated privileges")
+            elif error_code == 'INVALID_STRUCTURE':
+                logger.error("💡 The JSON structure contains unsupported elements")
+            else:
+                logger.error("💡 Please check the file and try again")
+            
+            return False
+        
+        # Log warnings if any
+        warnings = input_info.get('warnings', [])
+        if warnings:
+            logger.warning("⚠️  Warnings detected:")
+            for warning in warnings:
+                logger.warning(f"   - {warning}")
+        
         # Parse JSON file
         logger.info("Parsing JSON file...")
         json_data = parse_json_file(input_path, config)
