@@ -1,0 +1,629 @@
+# JSON to HTML Explorer Tool - Product Requirements Document
+
+## Overview
+Transform the existing markdown-to-json tool into a JSON to HTML Explorer that creates an interactive, Windows Explorer-like interface for browsing JSON files. The tool will take JSON files from the input folder and generate HTML files in the output folder with a tree view on the left and content viewer on the right.
+
+## Vision Statement
+Transform complex JSON data into an intuitive, interactive web interface that makes exploring and understanding JSON structures as natural as browsing files in Windows Explorer.
+
+## Design Philosophy
+
+### 1. Familiarity First
+- **Windows Explorer Metaphor**: Leverage users' existing mental model of file browsing
+- **Intuitive Navigation**: Tree view on left, content on right - just like Windows Explorer
+- **Standard Interactions**: Click to select, double-click to expand, right-click for context menu
+
+### 2. Visual Clarity
+- **Type Distinction**: Clear visual indicators for different data types (objects, arrays, primitives)
+- **Hierarchy Visualization**: Obvious parent-child relationships through indentation and icons
+- **Content Focus**: Selected content prominently displayed with syntax highlighting
+
+### 3. Performance and Scalability
+- **Progressive Loading**: Handle large JSON files without overwhelming the interface
+- **Efficient Rendering**: Only render visible tree nodes to maintain responsiveness
+- **Memory Conscious**: Smart caching and cleanup for large datasets
+
+## Current Tool Analysis
+The existing tool follows this workflow:
+1. **Input Detection**: Detects markdown folders or XML files in the input directory
+2. **Parsing**: Converts markdown/XML to internal data structure
+3. **JSON Generation**: Creates LLM-optimized JSON output
+4. **Output**: Saves timestamped JSON files with logs and summaries
+
+## New Tool Requirements
+
+### Core Functionality
+- **Input**: JSON files placed in the `input/` folder
+- **Processing**: Parse JSON structure and generate interactive HTML
+- **Output**: HTML files in timestamped `output/YYYY-MM-DD_HH-MM-SS/` folders
+- **Interface**: Windows Explorer-like layout with tree view and content viewer
+
+### HTML Interface Design
+
+#### Layout Structure
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    JSON Explorer                            │
+├─────────────────────┬───────────────────────────────────────┤
+│                     │                                       │
+│   Tree View Panel   │        Content Viewer Panel          │
+│   (Left Side)       │           (Right Side)               │
+│                     │                                       │
+│   ├─ Root Object    │   [Selected item content displayed]   │
+│   │   ├─ Property1  │                                       │
+│   │   │   ├─ Nested │                                       │
+│   │   │   └─ Value  │                                       │
+│   │   └─ Property2  │                                       │
+│   └─ Array Items    │                                       │
+│       ├─ [0]        │                                       │
+│       ├─ [1]        │                                       │
+│       └─ [2]        │                                       │
+│                     │                                       │
+└─────────────────────┴───────────────────────────────────────┘
+```
+
+#### Tree View Features
+- **Expandable/Collapsible Nodes**: Click to expand/collapse nested objects and arrays
+- **Visual Indicators**: 
+  - 📁 for objects
+  - 📄 for primitive values
+  - 📋 for arrays
+  - 🔗 for references
+- **Breadcrumb Navigation**: Show current path in tree
+
+#### Content Viewer Features
+- **Syntax Highlighted JSON**: Pretty-printed JSON with syntax highlighting
+- **Type Indicators**: Clear visual distinction between strings, numbers, booleans, null, objects, arrays
+- **Copy to Clipboard**: One-click copy of selected content
+- **Size Information**: Display size of objects/arrays
+- **Metadata**: Show data type, nesting level, path
+
+#### Interactive Features
+- **Click to Select**: Click any tree item to view its content
+- **Double-click to Expand**: Double-click to expand/collapse nodes
+- **Right-click Context Menu**: 
+  - Copy value
+  - Copy path
+  - Expand all children
+  - Collapse all children
+
+## Technical Architecture
+
+### System Overview
+The JSON to HTML Explorer transforms the existing markdown-to-json workflow into a json-to-html workflow, maintaining the same input/output pattern while creating an interactive web interface for JSON exploration.
+
+### Existing Workflow
+```
+Input Detection → Parsing → JSON Generation → Output Files
+     ↓              ↓           ↓              ↓
+input_detector → parser.py → json_generator → output/
+```
+
+### New Workflow
+```
+Input Detection → JSON Parsing → HTML Generation → Output Files
+     ↓              ↓              ↓              ↓
+input_detector → json_parser → html_generator → output/
+```
+
+### Module Architecture
+
+#### 1. Input Detection Module (`input_detector.py`)
+**Purpose**: Detect and validate JSON files in the input directory
+
+**Key Functions**:
+- `detect_input_type()`: Identify JSON files vs other file types
+- `validate_json_file()`: Validate JSON syntax and structure
+- `get_input_info()`: Comprehensive input analysis
+
+**Changes from Original**:
+- Replace markdown/XML detection with JSON detection
+- Add JSON syntax validation
+- Add file size and structure analysis
+
+#### 2. JSON Parser Module (`json_parser.py`)
+**Purpose**: Parse JSON files and create tree structure for HTML generation
+
+**Key Functions**:
+- `parse_json_file()`: Parse JSON and create internal structure
+- `build_tree_structure()`: Create hierarchical tree representation
+- `analyze_json_structure()`: Analyze data types and relationships
+
+**New Module** (replaces `parser.py`):
+- Focus on JSON-specific parsing
+- Handle large JSON files efficiently
+- Create metadata for tree visualization
+
+#### 3. HTML Generator Module (`html_generator.py`)
+**Purpose**: Generate interactive HTML with tree view and content viewer
+
+**Key Functions**:
+- `generate_html_file()`: Create main HTML structure
+- `generate_tree_html()`: Create tree view HTML
+- `generate_css()`: Generate CSS styles
+- `generate_javascript()`: Generate JavaScript functionality
+
+**New Module** (replaces `json_generator.py`):
+- HTML template generation
+- CSS and JavaScript generation
+- Interactive feature implementation
+
+#### 4. Main Orchestration (`json_to_html.py`)
+**Purpose**: Coordinate the entire conversion process
+
+**Key Functions**:
+- `convert_to_html()`: Main conversion function
+- `setup_logging()`: Configure logging system
+- `main()`: Command-line interface
+
+**Changes from Original**:
+- Replace JSON output with HTML output
+- Maintain same workflow structure
+- Update logging and error handling
+
+### Data Flow Architecture
+
+#### Phase 1: Input Processing
+```
+JSON Files → Input Detection → Validation → Structure Analysis
+    ↓              ↓              ↓              ↓
+input/     →   input_detector → json_parser → tree_structure
+```
+
+#### Phase 2: HTML Generation
+```
+Tree Structure → HTML Templates → CSS/JS → Final HTML
+      ↓              ↓              ↓          ↓
+json_parser → html_generator → styling → output/
+```
+
+#### Phase 3: Output Creation
+```
+HTML Files → Logging → Summary → Timestamped Output
+     ↓          ↓         ↓           ↓
+html_gen → logging → summary → output/YYYY-MM-DD_HH-MM-SS/
+```
+
+### File Structure Design
+
+#### Input Structure
+```
+input/
+├── sample1.json          # Individual JSON files
+├── sample2.json
+├── large_dataset.json
+└── config.json           # Optional configuration
+```
+
+#### Output Structure
+```
+output/
+└── 2025-01-20_14-30-25/
+    ├── index.html              # Main explorer interface
+    ├── styles.css              # CSS styles
+    ├── script.js               # JavaScript functionality
+    ├── data/
+    │   ├── sample1.json        # Original JSON files (copied)
+    │   └── sample2.json
+    ├── conversion_log.json     # Processing log
+    └── conversion_summary.md   # Human-readable summary
+```
+
+### HTML Structure Design
+
+#### Main HTML Template
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Explorer - [filename]</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="app-header">
+        <h1>JSON Explorer</h1>
+        <div class="toolbar">
+            <button id="expand-all">Expand All</button>
+            <button id="collapse-all">Collapse All</button>
+        </div>
+    </header>
+    
+    <main class="app-main">
+        <aside class="tree-panel">
+            <div id="tree-container">
+                <!-- Tree structure generated here -->
+            </div>
+        </aside>
+        
+        <section class="content-panel">
+            <div id="content-container">
+                <!-- Selected content displayed here -->
+            </div>
+        </section>
+    </main>
+    
+    <script src="script.js"></script>
+</body>
+</html>
+```
+
+#### Tree Structure HTML
+```html
+<div class="tree-node" data-path="root" data-type="object">
+    <div class="node-header">
+        <span class="node-icon">📁</span>
+        <span class="node-label">Root Object</span>
+        <span class="node-count">(3 properties)</span>
+    </div>
+    <div class="node-children">
+        <div class="tree-node" data-path="root.name" data-type="string">
+            <div class="node-header">
+                <span class="node-icon">📄</span>
+                <span class="node-label">name</span>
+                <span class="node-value">"John Doe"</span>
+            </div>
+        </div>
+        <!-- More nodes... -->
+    </div>
+</div>
+```
+
+### CSS Architecture
+
+#### Design System
+```css
+:root {
+    /* Color Palette */
+    --primary-color: #007acc;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    
+    /* Typography */
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --font-size-base: 14px;
+    --line-height-base: 1.5;
+    
+    /* Spacing */
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    
+    /* Layout */
+    --header-height: 60px;
+    --tree-width: 300px;
+    --border-radius: 4px;
+    
+    /* Light Theme Colors */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --border-color: #dee2e6;
+}
+```
+
+#### Layout System
+```css
+.app-main {
+    display: grid;
+    grid-template-columns: var(--tree-width) 1fr;
+    grid-template-rows: 1fr;
+    height: calc(100vh - var(--header-height));
+    gap: 1px;
+    background: var(--border-color);
+}
+
+.tree-panel {
+    background: var(--bg-secondary);
+    overflow-y: auto;
+    border-right: 1px solid var(--border-color);
+}
+
+.content-panel {
+    background: var(--bg-primary);
+    overflow-y: auto;
+    padding: var(--spacing-md);
+}
+```
+
+### JavaScript Architecture
+
+#### Module Structure
+```javascript
+// Main application controller
+class JSONExplorer {
+    constructor() {
+        this.treeData = null;
+        this.selectedNode = null;
+        this.init();
+    }
+    
+    init() {
+        this.loadTreeData();
+        this.setupEventListeners();
+        this.renderTree();
+    }
+    
+    // Tree management
+    loadTreeData() { /* Load JSON data */ }
+    renderTree() { /* Render tree structure */ }
+    expandNode(node) { /* Expand/collapse nodes */ }
+    
+    // Content management
+    selectNode(node) { /* Select and display content */ }
+    renderContent(content) { /* Render selected content */ }
+    
+    // Utility functions
+    expandAll() { /* Expand all nodes */ }
+    collapseAll() { /* Collapse all nodes */ }
+}
+
+// Tree node class
+class TreeNode {
+    constructor(data, path, type) {
+        this.data = data;
+        this.path = path;
+        this.type = type;
+        this.children = [];
+        this.expanded = false;
+        this.selected = false;
+    }
+    
+    addChild(child) { /* Add child node */ }
+    removeChild(child) { /* Remove child node */ }
+    toggle() { /* Toggle expanded state */ }
+    select() { /* Select this node */ }
+}
+
+// Content renderer
+class ContentRenderer {
+    renderObject(obj) { /* Render object content */ }
+    renderArray(arr) { /* Render array content */ }
+    renderPrimitive(value, type) { /* Render primitive values */ }
+    highlightSyntax(content) { /* Apply syntax highlighting */ }
+}
+```
+
+#### Event Handling
+```javascript
+// Event delegation for tree interactions
+document.addEventListener('click', (e) => {
+    if (e.target.closest('.tree-node')) {
+        const node = e.target.closest('.tree-node');
+        const path = node.dataset.path;
+        
+        if (e.target.closest('.node-header')) {
+            explorer.selectNode(path);
+        } else if (e.target.closest('.node-icon')) {
+            explorer.toggleNode(path);
+        }
+    }
+});
+
+// Double-click to expand/collapse
+document.addEventListener('dblclick', (e) => {
+    if (e.target.closest('.tree-node')) {
+        const node = e.target.closest('.tree-node');
+        const path = node.dataset.path;
+        explorer.toggleNode(path);
+    }
+});
+
+// Right-click context menu
+document.addEventListener('contextmenu', (e) => {
+    if (e.target.closest('.tree-node')) {
+        e.preventDefault();
+        const node = e.target.closest('.tree-node');
+        const path = node.dataset.path;
+        explorer.showContextMenu(e, path);
+    }
+});
+```
+
+## Technical Requirements
+
+### File Structure
+```
+json_to_html_tool/
+├── json_to_html.py          # Main orchestration script
+├── json_parser.py           # JSON parsing and structure analysis
+├── html_generator.py        # HTML generation with interactive features
+├── input_detector.py        # JSON file detection and validation
+├── requirements.txt         # Python dependencies
+├── README.md               # Documentation
+├── tests/                  # Unit tests
+├── input/                  # Input directory (place JSON files here)
+└── output/                 # Output directory (auto-generated)
+```
+
+### Dependencies
+- **loguru**: Logging functionality
+- **jinja2**: HTML template engine
+- **pygments**: Syntax highlighting for JSON
+- **pathlib**: File path handling
+
+### HTML/CSS/JavaScript Features
+- **Vanilla JavaScript**: No external JS libraries for portability
+- **CSS Grid/Flexbox**: Modern layout system
+- **CSS Variables**: Consistent styling system
+- **Local Storage**: Remember user preferences (expanded state)
+- **Clipboard API**: Copy functionality
+
+## User Experience Goals
+
+### For Developers
+- **Quick JSON Inspection**: Rapidly explore API responses, configuration files, and data structures
+- **Debugging Aid**: Easily identify data structure issues and missing properties
+- **Documentation Tool**: Generate visual documentation of JSON schemas
+
+### For Data Analysts
+- **Data Exploration**: Intuitive browsing of large datasets
+- **Structure Understanding**: Quickly grasp complex nested data relationships
+
+### For Non-Technical Users
+- **No Technical Barrier**: Understand JSON structure without knowing JSON syntax
+- **Visual Learning**: Learn JSON concepts through interactive exploration
+- **Safe Exploration**: No risk of accidentally modifying data
+
+## Performance Considerations
+
+### Large File Handling
+- **Progressive Loading**: Load tree nodes on demand
+- **Virtual Scrolling**: Only render visible tree nodes
+- **Lazy Evaluation**: Parse JSON structure incrementally
+- **Memory Management**: Clean up unused tree nodes
+
+### Rendering Optimization
+- **Cached Results**: Cache rendered content
+- **Efficient DOM Updates**: Use DocumentFragment for batch updates
+- **CSS Transitions**: Use CSS for smooth animations
+
+### Data Structure Optimization
+- **Tree Indexing**: Create indexes for fast node lookup
+- **Path Caching**: Cache computed paths for quick access
+- **Type Detection**: Cache data type information
+- **Size Calculation**: Cache object/array sizes
+
+## Security Considerations
+
+### Input Validation
+- **JSON Syntax**: Validate JSON before processing
+- **File Size Limits**: Prevent processing of extremely large files
+- **Path Traversal**: Prevent directory traversal attacks
+- **Content Sanitization**: Sanitize any user-generated content
+
+### Output Security
+- **XSS Prevention**: Escape all user content in HTML output
+- **Content Security Policy**: Implement CSP headers
+- **No Eval**: Avoid using eval() for dynamic code execution
+- **Safe JSON**: Use JSON.parse() instead of eval() for JSON parsing
+
+## Configuration Options
+
+### JSON Processing
+- **Max Depth**: Limit tree depth for very nested structures
+- **Array Limits**: Limit number of array items shown initially
+- **Value Truncation**: Truncate long string values in tree view
+- **Sort Keys**: Option to sort object keys alphabetically
+
+### Display Options
+- **Font Size**: Adjustable font sizes
+- **Tree Width**: Adjustable tree panel width
+- **Show Metadata**: Toggle display of type/size information
+
+## Error Handling
+
+### Input Validation
+- **JSON Syntax**: Validate JSON syntax before processing
+- **File Size**: Handle very large JSON files gracefully
+- **Encoding**: Support various text encodings
+- **Malformed Data**: Graceful degradation for partial JSON
+
+### Processing Errors
+- **Memory Issues**: Handle out-of-memory situations
+- **Timeout**: Handle processing timeouts for large files
+- **Corruption**: Detect and report corrupted JSON files
+
+## Testing Strategy
+
+### Unit Tests
+- **JSON Parser**: Test parsing of various JSON structures
+- **Tree Builder**: Test tree structure generation
+- **HTML Generator**: Test HTML output correctness
+- **JavaScript Functions**: Test interactive functionality
+
+### Integration Tests
+- **End-to-End**: Test complete workflow from input to output
+- **File Processing**: Test with various JSON file types and sizes
+- **Browser Compatibility**: Test across different browsers
+- **Performance**: Test with large JSON files
+
+### Accessibility Tests
+- **Screen Reader**: Test with screen reader software
+- **High Contrast**: Test with high contrast themes
+- **Font Scaling**: Test with different font sizes
+
+## Deployment Considerations
+
+### File Dependencies
+- **Self-Contained**: All CSS and JavaScript embedded in HTML
+- **No External Dependencies**: No CDN or external library requirements
+- **Portable**: HTML files can be moved and shared easily
+- **Offline Capable**: Works without internet connection
+
+### Browser Compatibility
+- **Modern Browsers**: Chrome, Firefox, Safari, Edge (latest versions)
+- **ES6 Support**: Use modern JavaScript features
+- **CSS Grid**: Use modern CSS layout features
+- **Fallbacks**: Provide fallbacks for older browsers
+
+## Monitoring and Logging
+
+### Application Logging
+- **Processing Logs**: Log JSON parsing and HTML generation
+- **Error Logging**: Log errors with stack traces
+- **Performance Logs**: Log processing time and memory usage
+
+### Error Handling
+- **Graceful Degradation**: Handle errors without crashing
+- **User Feedback**: Provide clear error messages to users
+- **Recovery Mechanisms**: Allow users to retry failed operations
+- **Debug Information**: Include debug info in error logs
+
+## Success Criteria
+
+### Functional Requirements
+- ✅ Successfully parse any valid JSON file
+- ✅ Generate interactive HTML explorer
+- ✅ Support expand/collapse tree navigation
+- ✅ Display content with syntax highlighting
+- ✅ Handle large JSON files efficiently
+- ✅ Provide copy to clipboard functionality
+
+### User Experience Requirements
+- ✅ Intuitive Windows Explorer-like interface
+- ✅ Fast and responsive interaction
+- ✅ Works across different browsers
+- ✅ Handles errors gracefully
+
+### Technical Requirements
+- ✅ Maintains same workflow as original tool
+- ✅ Generates timestamped output folders
+- ✅ Provides comprehensive logging
+- ✅ Includes unit tests
+- ✅ Well-documented code
+
+## Implementation Phases
+
+### Phase 1: Core JSON Parsing (Weeks 1-2)
+- Create JSON parser module
+- Implement tree structure generation
+- Add input detection and validation
+
+### Phase 2: HTML Generation (Weeks 3-4)
+- Create HTML template system
+- Implement basic tree view
+- Add content viewer
+
+### Phase 3: Interactive Features (Weeks 5-6)
+- Add JavaScript functionality
+- Implement expand/collapse
+- Add copy to clipboard
+
+### Phase 4: Testing and Polish (Weeks 7-8)
+- Comprehensive testing
+- Performance optimization
+- Documentation completion
+
+## Future Enhancements
+- **Multiple File Support**: Browse multiple JSON files simultaneously
+- **Comparison Tool**: Compare two JSON files side by side
+- **Schema Analysis**: Auto-generate JSON schema
+- **Data Visualization**: Charts and graphs for array data
+- **Plugin System**: Extensible architecture for custom features 
