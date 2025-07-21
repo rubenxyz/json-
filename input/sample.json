@@ -1,0 +1,77 @@
+{
+  "name": "Sample JSON Data",
+  "version": "1.0.0",
+  "description": "A sample JSON file for testing the JSON to HTML Explorer tool",
+  "metadata": {
+    "created": "2024-01-15",
+    "author": "JSON Explorer Tool",
+    "tags": ["sample", "test", "demo"]
+  },
+  "data": {
+    "users": [
+      {
+        "id": 1,
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "active": true,
+        "profile": {
+          "age": 30,
+          "location": "New York",
+          "interests": ["programming", "reading", "hiking"]
+        }
+      },
+      {
+        "id": 2,
+        "name": "Jane Smith",
+        "email": "jane.smith@example.com",
+        "active": false,
+        "profile": {
+          "age": 25,
+          "location": "San Francisco",
+          "interests": ["design", "travel", "cooking"]
+        }
+      }
+    ],
+    "settings": {
+      "theme": "light",
+      "language": "en",
+      "notifications": {
+        "email": true,
+        "push": false,
+        "sms": true
+      }
+    },
+    "statistics": {
+      "total_users": 2,
+      "active_users": 1,
+      "average_age": 27.5
+    }
+  },
+  "nested_example": {
+    "level1": {
+      "level2": {
+        "level3": {
+          "level4": {
+            "level5": {
+              "deep_value": "This is very deep!"
+            }
+          }
+        }
+      }
+    }
+  },
+  "array_example": [
+    "simple string",
+    42,
+    true,
+    null,
+    {
+      "nested_object": "in array"
+    },
+    [
+      "nested",
+      "array",
+      "items"
+    ]
+  ]
+} 

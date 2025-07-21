@@ -1,177 +1,173 @@
 #!/usr/bin/env python3
 """
-Input Detection Module
-Detects and validates input types (markdown folder vs XML file)
+Input Detector for JSON to HTML Explorer Tool
+Detects and validates JSON input files
 """
 
-import os
-import xml.etree.ElementTree as ET
+import json
 from pathlib import Path
 from loguru import logger
 
-def detect_input_type(input_path):
-    """
-    Detect if input is a markdown folder or XML file
-    
-    Args:
-        input_path (str or Path): Path to input (file or directory)
-        
-    Returns:
-        str: 'markdown' or 'xml'
-        
-    Raises:
-        ValueError: If input type cannot be determined
-    """
-    path = Path(input_path)
-    
-    if not path.exists():
-        raise ValueError(f"Input path does not exist: {input_path}")
-    
-    if path.is_file():
-        # Check if it's an XML file
-        if path.suffix.lower() == '.xml':
-            return 'xml'
-        else:
-            raise ValueError(f"Unsupported file type: {path.suffix}. Only .xml files are supported.")
-    
-    elif path.is_dir():
-        # Check if directory contains markdown files
-        md_files = list(path.rglob("*.md"))
-        if md_files:
-            return 'markdown'
-        else:
-            raise ValueError(f"No markdown files found in directory: {input_path}")
-    
-    else:
-        raise ValueError(f"Input path is neither a file nor directory: {input_path}")
-
-def validate_markdown_folder(folder_path):
-    """
-    Validate markdown folder structure
-    
-    Args:
-        folder_path (str or Path): Path to markdown folder
-        
-    Returns:
-        dict: Validation results with file count and structure info
-        
-    Raises:
-        ValueError: If folder is invalid
-    """
-    folder = Path(folder_path)
-    
-    if not folder.exists():
-        raise ValueError(f"Folder does not exist: {folder_path}")
-    
-    if not folder.is_dir():
-        raise ValueError(f"Path is not a directory: {folder_path}")
-    
-    # Find all markdown files recursively
-    md_files = list(folder.rglob("*.md"))
-    
-    if not md_files:
-        raise ValueError(f"No markdown files found in: {folder_path}")
-    
-    # Analyze folder structure
-    structure = {
-        'total_files': len(md_files),
-        'files': [],
-        'subdirectories': set()
-    }
-    
-    for file_path in md_files:
-        relative_path = file_path.relative_to(folder)
-        structure['files'].append({
-            'name': file_path.name,
-            'path': str(relative_path),
-            'size': file_path.stat().st_size
-        })
-        
-        # Track subdirectories
-        if relative_path.parent != Path('.'):
-            structure['subdirectories'].add(str(relative_path.parent))
-    
-    structure['subdirectories'] = list(structure['subdirectories'])
-    
-    logger.info(f"Markdown folder validated: {structure['total_files']} files found")
-    return structure
-
-def validate_xml_file(xml_path):
-    """
-    Validate XML file structure
-    
-    Args:
-        xml_path (str or Path): Path to XML file
-        
-    Returns:
-        dict: Validation results with XML structure info
-        
-    Raises:
-        ValueError: If XML file is invalid
-    """
-    xml_file = Path(xml_path)
-    
-    if not xml_file.exists():
-        raise ValueError(f"XML file does not exist: {xml_path}")
-    
-    if not xml_file.is_file():
-        raise ValueError(f"Path is not a file: {xml_path}")
-    
-    if xml_file.suffix.lower() != '.xml':
-        raise ValueError(f"File is not an XML file: {xml_path}")
-    
-    try:
-        # Try to parse XML to validate structure
-        tree = ET.parse(xml_file)
-        root = tree.getroot()
-        
-        # Analyze XML structure
-        structure = {
-            'root_tag': root.tag,
-            'attributes': dict(root.attrib),
-            'total_elements': len(list(root.iter())),
-            'file_size': xml_file.stat().st_size
-        }
-        
-        # Count different element types
-        element_counts = {}
-        for elem in root.iter():
-            element_counts[elem.tag] = element_counts.get(elem.tag, 0) + 1
-        
-        structure['element_counts'] = element_counts
-        
-        logger.info(f"XML file validated: {structure['total_elements']} elements found")
-        return structure
-        
-    except ET.ParseError as e:
-        raise ValueError(f"Invalid XML file: {e}")
-    except Exception as e:
-        raise ValueError(f"Error reading XML file: {e}")
-
 def get_input_info(input_path):
     """
-    Get comprehensive information about input
+    Detect and validate JSON input file
     
     Args:
-        input_path (str or Path): Path to input
+        input_path (str or Path): Path to input file
         
     Returns:
-        dict: Input type and validation info
+        dict: Input information including type, validation status, and details
     """
+    input_path = Path(input_path)
+    
+    # Check if path exists
+    if not input_path.exists():
+        return {
+            'type': 'unknown',
+            'validation': 'error',
+            'error': f'Input path does not exist: {input_path}',
+            'path': str(input_path)
+        }
+    
+    # Check if it's a file (not directory)
+    if not input_path.is_file():
+        return {
+            'type': 'unknown',
+            'validation': 'error',
+            'error': f'Input path is not a file: {input_path}',
+            'path': str(input_path)
+        }
+    
+    # Check file extension
+    if input_path.suffix.lower() != '.json':
+        return {
+            'type': 'unknown',
+            'validation': 'error',
+            'error': f'Input file must have .json extension: {input_path}',
+            'path': str(input_path)
+        }
+    
+    # Try to parse JSON to validate
     try:
-        input_type = detect_input_type(input_path)
+        with open(input_path, 'r', encoding='utf-8') as f:
+            json_data = json.load(f)
         
-        if input_type == 'markdown':
-            validation = validate_markdown_folder(input_path)
-        else:  # xml
-            validation = validate_xml_file(input_path)
+        # Analyze JSON structure
+        structure_info = analyze_json_structure(json_data)
         
         return {
-            'type': input_type,
+            'type': 'json',
+            'validation': 'valid',
             'path': str(input_path),
-            'validation': validation
+            'size': input_path.stat().st_size,
+            'structure': structure_info,
+            'data': json_data
+        }
+        
+    except json.JSONDecodeError as e:
+        return {
+            'type': 'json',
+            'validation': 'error',
+            'error': f'Invalid JSON format: {str(e)}',
+            'path': str(input_path)
+        }
+    except Exception as e:
+        return {
+            'type': 'json',
+            'validation': 'error',
+            'error': f'Error reading file: {str(e)}',
+            'path': str(input_path)
+        }
+
+def analyze_json_structure(data, max_depth=3, current_depth=0):
+    """
+    Analyze JSON structure to provide insights about the data
+    
+    Args:
+        data: JSON data to analyze
+        max_depth: Maximum depth to analyze
+        current_depth: Current depth in recursion
+        
+    Returns:
+        dict: Structure analysis information
+    """
+    if current_depth >= max_depth:
+        return {'type': 'truncated', 'depth': current_depth}
+    
+    if isinstance(data, dict):
+        return {
+            'type': 'object',
+            'keys': list(data.keys()),
+            'key_count': len(data),
+            'children': {
+                key: analyze_json_structure(value, max_depth, current_depth + 1)
+                for key, value in data.items()
+            } if current_depth < max_depth - 1 else None
+        }
+    elif isinstance(data, list):
+        return {
+            'type': 'array',
+            'length': len(data),
+            'sample_items': [
+                analyze_json_structure(item, max_depth, current_depth + 1)
+                for item in data[:3]  # Sample first 3 items
+            ] if data and current_depth < max_depth - 1 else None
+        }
+    else:
+        return {
+            'type': 'primitive',
+            'value_type': type(data).__name__,
+            'sample_value': str(data)[:100] if data is not None else None
+        }
+
+def validate_json_file(file_path):
+    """
+    Validate that a file contains valid JSON
+    
+    Args:
+        file_path (str or Path): Path to JSON file
+        
+    Returns:
+        tuple: (is_valid, error_message)
+    """
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            json.load(f)
+        return True, None
+    except json.JSONDecodeError as e:
+        return False, f"JSON decode error: {str(e)}"
+    except Exception as e:
+        return False, f"File read error: {str(e)}"
+
+def get_json_file_info(file_path):
+    """
+    Get detailed information about a JSON file
+    
+    Args:
+        file_path (str or Path): Path to JSON file
+        
+    Returns:
+        dict: File information
+    """
+    file_path = Path(file_path)
+    
+    if not file_path.exists():
+        return {'error': 'File does not exist'}
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        return {
+            'file_size': file_path.stat().st_size,
+            'encoding': 'utf-8',
+            'structure': analyze_json_structure(data),
+            'root_type': type(data).__name__,
+            'is_valid': True
         }
         
     except Exception as e:
-        logger.error(f"Input validation failed: {e}")
-        raise 
+        return {
+            'error': str(e),
+            'is_valid': False
+        } 
